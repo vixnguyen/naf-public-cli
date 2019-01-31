@@ -1,0 +1,19 @@
+{
+  "name": "naf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "naf": "bin/execute.js"
+  },
+  "devDependencies": {
+    "fs": "0.0.1-security",
+    "inquirer": "^6.2.1",
+    "shelljs": "^0.8.3"
+  },
+  "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
+  "license": "ISC"
+}

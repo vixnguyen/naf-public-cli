@@ -15,9 +15,9 @@ const projectDir = process.cwd()
 const currentDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
-const templateCrudDir = `${projectDir}/bin/templates/crud/`;
+const templateCrudDir = `${projectInitDir}/bin/templates/crud/`;
 // template dir for empty file
-const templateNewDir = `${projectDir}/bin/templates/new/`;
+const templateNewDir = `${projectInitDir}/bin/templates/new/`;
 const routeDir = `${srcDir}routes/`;
 var path = require('path');
 var appDir = path.dirname(require.main.filename);

@@ -1,6 +1,6 @@
 {
   "name": "@vixnguyen/naf",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A Public CLI for Node API project",
   "main": "index.js",
   "scripts": {

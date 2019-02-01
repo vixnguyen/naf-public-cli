@@ -128,12 +128,26 @@ const PROJECT_INIT_STEPS = [
   {
     name: 'projectName',
     type: 'input',
-    message: 'Your Project name:'
+    message: 'Your Project name:',
+    validate: function (input) {
+      if (input) {
+        return true;
+      } else {
+        return 'Project name is required!';
+      }
+    }
   },
   {
     name: 'dbName',
     type: 'input',
-    message: 'Your Database name:'
+    message: 'Your Database name:',
+    validate: function (input) {
+      if (input) {
+        return true;
+      } else {
+        return 'Database name is required!';
+      }
+    }
   }
 ]
 

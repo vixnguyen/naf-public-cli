@@ -10,9 +10,9 @@ const shell = require('shelljs');
 const chalk = require('chalk');
 
 
-// const projectDir = __dirname.replace('/bin', '');
-const projectDir = process.cwd();
-const currentDir = process.cwd()
+const projectInitDir = __dirname.replace('/bin', '');
+const projectDir = process.cwd()
+const currentDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
 const templateCrudDir = `${projectDir}/bin/templates/crud/`;
@@ -248,7 +248,7 @@ generator = {
       const newProjectDir = `${currentDir}/${projectName}`;
       shell.mkdir('-p', newProjectDir);
       // copy source code to new project dir
-      fsExtra.copy(`${projectDir}/project/`, `${newProjectDir}/`, err =>{
+      fsExtra.copy(`${projectInitDir}/project/`, `${newProjectDir}/`, err =>{
         if(err) return console.error(err);
         // if success change project metadata by config
         projectConfig({

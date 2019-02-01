@@ -1,6 +1,6 @@
 {
   "name": "@vixnguyen/naf",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Public CLI for Node API project",
   "main": "index.js",
   "scripts": {
@@ -9,15 +9,13 @@
   "bin": {
     "naf": "bin/execute"
   },
-  "devDependencies": {
-    "fs": "0.0.1-security",
-    "inquirer": "^6.2.1",
-    "shelljs": "^0.8.3"
-  },
   "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "fs-extra": "^7.0.1"
+    "fs": "0.0.1-security",
+    "fs-extra": "^7.0.1",
+    "inquirer": "^6.2.1",
+    "shelljs": "^0.8.3"
   },
   "repository": {
     "type": "git",

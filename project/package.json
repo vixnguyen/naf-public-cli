@@ -1,0 +1,28 @@
+{
+  "name": "naf-cli",
+  "version": "1.0.0",
+  "description": "A fast REST APIs with Node.js, MongoDB, Fastify and Swagger.",
+  "main": "index.js",
+  "scripts": {
+    "start": "./node_modules/nodemon/bin/nodemon.js ./src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "boom": "^7.2.2",
+    "fastify": "^1.13.0",
+    "fastify-mongodb": "^0.9.1",
+    "fastify-swagger": "^0.15.3",
+    "module-alias": "^2.1.0",
+    "mongoose": "^5.3.14",
+    "nodemon": "^1.18.7"
+  },
+  "_moduleAliases": {
+    "@core": "./src/core",
+    "@controllers": "./src/controllers",
+    "@models": "./src/models",
+    "@routes": "./src/routes",
+    "@schemas": "./src/schemas"
+  }
+}

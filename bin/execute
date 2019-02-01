@@ -5,16 +5,21 @@
 const cmdAlias = 'naf';
 const inquirer = require('inquirer');
 const fs = require('fs');
+const fsExtra = require('fs-extra');
 const shell = require('shelljs');
 const chalk = require('chalk');
 
-const projectDir = process.cwd();
+
+const projectDir = __dirname.replace('/bin', '');
+const currentDir = process.cwd()
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
 const templateCrudDir = `${projectDir}/bin/templates/crud/`;
 // template dir for empty file
 const templateNewDir = `${projectDir}/bin/templates/new/`;
 const routeDir = `${srcDir}routes/`;
+var path = require('path');
+var appDir = path.dirname(require.main.filename);
 
 // get from node process
 const actor = process.argv[2];
@@ -113,6 +118,25 @@ const INQUIRER_STEPS = {
 };
 
 /**
+ * Step for initing project
+ * @steps
+ * 1. Require enter Project name
+ * 2. Enter Database name
+ */
+const PROJECT_INIT_STEPS = [
+  {
+    name: 'projectName',
+    type: 'input',
+    message: 'Your Project name:'
+  },
+  {
+    name: 'dbName',
+    type: 'input',
+    message: 'Your Database name:'
+  }
+]
+
+/**
  * Steps for creating model
  * @steps
  * 1. Require enter model name
@@ -180,6 +204,25 @@ defineActions = (hasAction) => {
   processFiles();
 }
 
+projectConfig = (options) => {
+  const writePath = `${options.projectDir}/`;
+  const optionPath = `${projectDir}/options/`;
+  const files = [
+    'src/config/db.js',
+    'package.json'
+  ];
+  let contents;
+  for (let fileName of files) {
+    contents = fs.readFileSync(`${optionPath}${fileName}`, 'utf8');
+    // modify content
+    contents = contents.replace(/__PROJECT_NAME__/g, options.projectName);
+    // modify content
+    contents = contents.replace(/__DB_NAME__/g, options.dbName);
+    // create a new file with contents
+    fs.writeFileSync(`${writePath}${fileName}`, contents, 'utf8');
+  }
+}
+
 /**
  * Define bash script
  * @options 
@@ -190,6 +233,25 @@ defineActions = (hasAction) => {
  * }
  */
 generator = {
+  init: async () => {
+    await inquirer.prompt(PROJECT_INIT_STEPS).then(async(answers) => {
+      const projectName = answers['projectName'];
+      const dbName = answers['dbName'];
+      // create new dir by project name
+      const newProjectDir = `${currentDir}/${projectName}`;
+      shell.mkdir('-p', newProjectDir);
+      // copy source code to new project dir
+      fsExtra.copy(`${projectDir}/project/`, `${newProjectDir}/`, err =>{
+        if(err) return console.error(err);
+        // if success change project metadata by config
+        projectConfig({
+          projectName: projectName,
+          dbName: dbName,
+          projectDir: newProjectDir
+        });
+      });
+    });
+  },
   model: async () => {
     await inquirer.prompt(CREATING_MODEL_STEPS).then(async(model) => {
       const modelName = model['name'];

@@ -16,7 +16,9 @@
   },
   "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "fs-extra": "^7.0.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vixnguyen/naf-public-cli.git"

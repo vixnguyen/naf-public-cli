@@ -226,7 +226,7 @@ projectConfig = (options) => {
   // project generated
   const writePath = `${options.projectDir}/`;
   // project options template
-  const optionPath = `${projectDir}/options/`;
+  const optionPath = `${projectInitDir}/options/`;
   // files need to change
   const files = [
     'src/config/db.js',

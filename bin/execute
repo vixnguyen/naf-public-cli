@@ -242,6 +242,7 @@ projectConfig = (options) => {
     // create a new file with contents
     fs.writeFileSync(`${writePath}${fileName}`, contents, 'utf8');
   }
+  console.log(chalk.cyan(`Project ${options.projectName} initialized!`));
 }
 
 /**
@@ -260,17 +261,21 @@ generator = {
       const dbName = answers['dbName'];
       // create new dir by project name
       const newProjectDir = `${currentDir}/${projectName}`;
-      shell.mkdir('-p', newProjectDir);
-      // copy source code to new project dir
-      fsExtra.copy(`${projectInitDir}/project/`, `${newProjectDir}/`, err =>{
-        if(err) return console.error(err);
-        // if success change project metadata by config
-        projectConfig({
-          projectName: projectName,
-          dbName: dbName,
-          projectDir: newProjectDir
+      if (!fs.existsSync(newProjectDir)) {
+        shell.mkdir('-p', newProjectDir);
+        // copy source code to new project dir
+        fsExtra.copy(`${projectInitDir}/project/`, `${newProjectDir}/`, err =>{
+          if(err) return console.error(err);
+          // if success change project metadata by config
+          projectConfig({
+            projectName: projectName,
+            dbName: dbName,
+            projectDir: newProjectDir
+          });
         });
-      });
+      } else {
+        console.log(chalk.red(`${newProjectDir} already exists!`));
+      }   
     });
   },
   model: async () => {

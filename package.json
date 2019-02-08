@@ -1,7 +1,7 @@
 {
   "name": "@vixnguyen/naf",
-  "version": "1.0.7",
-  "description": "A Public CLI for Node API project",
+  "version": "1.0.8",
+  "description": "The CLI helps to create a Node API application with MongoDB, Fastify and Swagger.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

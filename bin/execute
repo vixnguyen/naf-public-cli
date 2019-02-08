@@ -344,8 +344,9 @@ generator = {
     defineActions();
   },
   help: () => {
-    console.log(chalk.yellow(`${cmdAlias} model to create model`));
-    console.log(chalk.yellow(`${cmdAlias} controller to create controller`));
+    console.log(chalk.yellow(`'${cmdAlias} init' to init a new project`));
+    console.log(chalk.yellow(`'${cmdAlias} model' to create model`));
+    console.log(chalk.yellow(`'${cmdAlias} controller' to create controller`));
   }
 }
 

@@ -18,10 +18,9 @@ The Naf CLI makes it easy to create an application that already works, right out
 `naf init`
 
 ## Development
-After a new project initialized
 
 #### 1. Prerequisites
-- Nodejs
+- NodeJS
 - MongoDB
 
 #### 2. Code generating
@@ -35,7 +34,7 @@ Scaffold  | Usage
 
 > Note that the generating script only support when you run it at the root folder of your project.
 
-### Run
+#### 3. Run
 
 #### Install dependencies
 `npm install`

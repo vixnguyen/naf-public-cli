@@ -1,6 +1,6 @@
 {
   "name": "@vixnguyen/naf",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "The CLI helps to create a Node API application with MongoDB, Fastify and Swagger.",
   "main": "index.js",
   "scripts": {

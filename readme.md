@@ -39,5 +39,5 @@ Scaffold  | Usage
 #### Install dependencies
 `npm install`
 
-#### Serve with hot reload at localhost:0202
+#### Serve with hot reload at localhost:2101
 `npm start`

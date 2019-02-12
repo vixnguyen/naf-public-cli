@@ -10,7 +10,7 @@ const shell = require('shelljs');
 const chalk = require('chalk');
 
 
-const projectInitDir = __dirname.replace('\\', '/');
+let projectInitDir = __dirname.replace('\\', '/');
 projectInitDir = projectInitDir.replace('/bin', '');
 const projectDir = process.cwd()
 const currentDir = process.cwd();

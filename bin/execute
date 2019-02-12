@@ -9,7 +9,7 @@ const fsExtra = require('fs-extra');
 const shell = require('shelljs');
 const chalk = require('chalk');
 
-let projectInitDir = __dirname.replace(/\bin/, '');
+let projectInitDir = __dirname.replace(/\\/g, '');
 projectInitDir = projectInitDir.replace('/bin', '');
 const projectDir = process.cwd()
 const currentDir = process.cwd();

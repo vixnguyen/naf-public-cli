@@ -8,18 +8,16 @@ const fs = require('fs');
 const fsExtra = require('fs-extra');
 const shell = require('shelljs');
 const chalk = require('chalk');
+const path = require('path');
 
-let projectInitDir = __dirname.replace(/\\/g, '');
-projectInitDir = projectInitDir.replace('/bin', '');
-const projectDir = process.cwd()
-const currentDir = process.cwd();
+const projectInitDir = path.dirname(__dirname).split(path.sep).pop();
+const projectDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
 const templateCrudDir = `${projectInitDir}/bin/templates/crud/`;
 // template dir for empty file
 const templateNewDir = `${projectInitDir}/bin/templates/new/`;
 const routeDir = `${srcDir}routes/`;
-var path = require('path');
 var appDir = path.dirname(require.main.filename);
 
 // get from node process
@@ -260,7 +258,7 @@ generator = {
       const projectName = answers['projectName'];
       const dbName = answers['dbName'];
       // create new dir by project name
-      const newProjectDir = `${currentDir}/${projectName}`;
+      const newProjectDir = `${projectDir}/${projectName}`;
       if (!fs.existsSync(newProjectDir)) {
         shell.mkdir('-p', newProjectDir);
         // copy source code to new project dir

@@ -10,7 +10,7 @@ const shell = require('shelljs');
 const chalk = require('chalk');
 const path = require('path');
 
-const projectInitDir = path.dirname(__dirname).split(path.sep).pop();
+const projectInitDir = path.dirname(__dirname);
 const projectDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action

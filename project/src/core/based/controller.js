@@ -14,11 +14,11 @@
 export default (options) => {
 
   // External Dependencies
-  const boom = require('boom')
+  import boom from 'boom'
   // Get options
   const { model } = options
   // Get Data Models
-  const dataModel = require(`@models/${model}.model`)
+  import dataModel from `@models/${model}.model`
   
   return {
     boom: boom,

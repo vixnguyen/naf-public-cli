@@ -14,7 +14,7 @@
  *    routes: an array of crud routes
  * }
  */
-export default (options) => {
+export default async (options) => {
   const defaultOptions = {
     controller: '',
     dir: '',
@@ -24,10 +24,15 @@ export default (options) => {
   const relativePath = `${dir}${controller}`
 
   // Import Controllers
-  const handler = require(`@controllers/${relativePath}.controller`)[`${controller}Action`]
+  // const handler = require(`@controllers/${relativePath}.controller`)[`${controller}Action`]
+
+  const controller = await import(`@controllers/${relativePath}.controller`)
+  const handler = controller[`${controller}Action`]
 
   // Import Swagger documentation & get Schema
-  const schema = require(`@schemas/${relativePath}.schema`)[`${controller}Schema`]
+  // const schema = require(`@schemas/${relativePath}.schema`)[`${controller}Schema`]
+  const schemaObj = await import(`@schemas/${relativePath}.schema`)
+  const schema = schemaObj[`${controller}Schema`]
 
   // Define url
   const route = path ? `/${path}` : `/${relativePath}s`

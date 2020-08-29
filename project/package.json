@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "A fast REST APIs with Node.js, MongoDB, Fastify and Swagger.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "./node_modules/nodemon/bin/nodemon.js ./src/index.js",
+    "start": "nodemon ./src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
@@ -24,5 +25,8 @@
     "@models": "./src/models",
     "@routes": "./src/routes",
     "@schemas": "./src/schemas"
+  },
+  "devDependencies": {
+    "eslint": "^7.7.0"
   }
 }

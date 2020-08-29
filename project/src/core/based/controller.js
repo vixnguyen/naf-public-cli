@@ -11,7 +11,7 @@
  *    actions: is based action included CRUD and test action
  * }
  */
-module.exports = (options) => {
+export default (options) => {
 
   // External Dependencies
   const boom = require('boom')

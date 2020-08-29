@@ -1,6 +1,6 @@
 // Import routes
-const indexRoute = require('./index.route')
+import indexRoute from './index.route.js'
 
-module.exports = [
+export default [
 	...indexRoute
 ]

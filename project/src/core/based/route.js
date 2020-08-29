@@ -14,7 +14,7 @@
  *    routes: an array of crud routes
  * }
  */
-module.exports = (options) => {
+export default (options) => {
   const defaultOptions = {
     controller: '',
     dir: '',

@@ -1,4 +1,4 @@
-exports.options = {
+export default {
   routePrefix: '/documentation',
   exposeRoute: true,
   swagger: {

@@ -227,7 +227,7 @@ projectConfig = (options) => {
   const optionPath = `${projectInitDir}/options/`;
   // files need to change
   const files = [
-    'src/config/db.js',
+    'src/config/db.ts',
     'package.json'
   ];
   let contents;
@@ -530,7 +530,7 @@ modifyAppRoute = (name) => {
     fileContents = fileContents.replace(/\n*\]/g, `\n\t...${routeName}\n]`);
     fileContents = fileContents.replace(checkBreakline, '\n');
     // requiring new route before module export
-    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}.js'\n`);
+    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}.ts'\n`);
     // apply new content to the app route
     fs.writeFileSync(`${indexRoutes}`, fileContents, 'utf8');
     return `${indexRoutes}`;

@@ -32,11 +32,9 @@ export class BaseRoute implements RouteConfig {
   
     // Import Controllers
     const handler = require(`@controllers/${relativePath}.controller`).default
-    console.info(handler)
   
     // Import Swagger documentation & get Schema
     const schema = require(`@schemas/${relativePath}.schema`).default
-    console.info(schema)
   
     // Define url
     const route = path ? `/${path}` : `/${relativePath}s`

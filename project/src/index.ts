@@ -1,20 +1,19 @@
-// Require the module alias
-// require('module-alias/register')
+import 'module-alias/register';
 
 // Import Routes
-import routes from './routes/app.route.js'
+import routes from './routes/app.route'
 
 // Import Swagger Options
-import swaggerOptions  from './config/swagger.js'
+import swaggerOptions  from './config/swagger'
 
 // Require the fastify framework and instantiate it
-import fastify from 'fastify'
+const fastify = require('fastify')
 
 const app = fastify({
   logger: {
     prettyPrint: true,
     serializers: {
-      req(req) {
+      req(req: any) {
         return {
           method: req.method,
           url: req.url,
@@ -28,24 +27,24 @@ const app = fastify({
   }
 })
 
-import fastifySwagger from 'fastify-swagger'
+const fastifySwagger = require('fastify-swagger')
 
 // Register Swagger
 app.register(fastifySwagger, swaggerOptions)
 
 // Require external modules
-import mongoose from 'mongoose'
+const mongoose = require('mongoose')
 
 // Import DB Config
-import db from './config/db.js'
+import dbConfig from './config/db'
 
 // Connect to DB
-mongoose.connect(`mongodb://${db.host}/${db.name}`)
+mongoose.connect(`mongodb://${dbConfig.host}/${dbConfig.name}`)
   .then(() => console.log('MongoDB connected...'))
-  .catch(err => console.log(err))
+  .catch((err: any) => console.log(err))
 
 // Loop over each route
-routes.forEach((route, index) => {
+routes.forEach((route: any, index: number) => {
   app.route(route)
 })
 

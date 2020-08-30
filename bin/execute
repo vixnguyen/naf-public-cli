@@ -530,7 +530,7 @@ modifyAppRoute = (name) => {
     fileContents = fileContents.replace(/\n*\]/g, `\n\t...${routeName}\n]`);
     fileContents = fileContents.replace(checkBreakline, '\n');
     // requiring new route before module export
-    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}.ts'\n`);
+    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}'\n`);
     // apply new content to the app route
     fs.writeFileSync(`${indexRoutes}`, fileContents, 'utf8');
     return `${indexRoutes}`;

@@ -23,6 +23,10 @@
 //   }
 // }
 
-exports.__MODEL__Schema = {
+// exports.__MODEL__Schema = {
+//   // adding schema here
+// }
+
+export default {
   // adding schema here
 }

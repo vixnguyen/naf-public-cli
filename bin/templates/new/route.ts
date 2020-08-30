@@ -6,7 +6,7 @@
  * const path = '/yourPath'
  */
 
-module.exports = [
+export default [
   // {
   //   method: 'GET | POST | PUT | DELETE | etc...',
   //   url: `your url`,

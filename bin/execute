@@ -502,15 +502,15 @@ modifyAppRoute = (name) => {
   const routeName = `${name}Route`;
   const routeFile = `${name}.route`;
   let fileContents = fs.readFileSync(`${indexRoutes}`, 'utf8');
-  regex = /(module\.exports = \[)(.|\n)*(\])/g;
+  regex = /(export default \[)(.|\n)*(\])/g;
   // module.exports = []
-  checkModuleNull = /(module\.exports = \[)(\n)*(\])/g;
+  checkModuleNull = /(export default \[)(\n)*(\])/g;
   // ...namefile, or ...namefile, // comment 
   checkLastLine = /[a-zA-Z]+\,\s*[\sa-zA-Z\/\/]*\n\]/g;
   //...namefile // comment 
   checkLastLineSpecialComma = /[a-zA-Z]+\s\/\/(\s?[a-z]+)?\n*\]/g;
-  checkBreakline = /\n*(?=(module\.exports = \[)(.|\n)*(\]))/g;
-  findModuleToInsertImport = /\n(?=\nmodule\.exports)/g;
+  checkBreakline = /\n*(?=(export default \[)(.|\n)*(\]))/g;
+  findModuleToInsertImport = /\n(?=\nexport default)/g;
 
   // app route has content & the new route contained in root route folder
   if (regex.test(fileContents) && !dataForGenerating.folderName) {
@@ -530,7 +530,7 @@ modifyAppRoute = (name) => {
     fileContents = fileContents.replace(/\n*\]/g, `\n\t...${routeName}\n]`);
     fileContents = fileContents.replace(checkBreakline, '\n');
     // requiring new route before module export
-    fileContents = fileContents.replace(findModuleToInsertImport, `\nconst ${routeName} = require('./${routeFile}')\n`);
+    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}.js'\n`);
     // apply new content to the app route
     fs.writeFileSync(`${indexRoutes}`, fileContents, 'utf8');
     return `${indexRoutes}`;

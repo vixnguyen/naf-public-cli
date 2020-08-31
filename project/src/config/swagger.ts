@@ -1,4 +1,4 @@
-exports.options = {
+const swaggerOptions: any = {
   routePrefix: '/documentation',
   exposeRoute: true,
   swagger: {
@@ -16,4 +16,5 @@ exports.options = {
     consumes: ['application/json'],
     produces: ['application/json']
   }
-}
+};
+export default swaggerOptions;

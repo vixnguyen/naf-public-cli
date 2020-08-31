@@ -4,8 +4,10 @@
  * 2. boom: to handle action errors
  * 3. model: is a data model
  */
-let { actions } = require('@core/based/controller')({
-  model: '__MODEL__'
+import { BaseController } from '@core/based/controller'
+
+const { actions }: any = new BaseController({
+	model: '__MODEL__'
 })
 
 /**
@@ -23,4 +25,4 @@ let { actions } = require('@core/based/controller')({
  * { ...actions, ...newActions }
  */
 
-exports.__MODEL__Action = actions
+export default actions

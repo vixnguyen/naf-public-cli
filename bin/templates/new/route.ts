@@ -1,12 +1,12 @@
 /**
  * Import area
  * Example for the basic importing:
- * const yourHandler = require(`@controllers/${yourControllerName}.controller`)[`${yourControllerName}Action`]
- * const yourDocumentation = require(`@schemas/${yourControllerName}.schema`)[`${yourControllerName}Schema`] -> this is an additional
+ * import yourHandler from `@controllers/${yourControllerName}.controller`)
+ * import yourDocumentation from `@schemas/${yourControllerName}.schema`) -> this is an additional
  * const path = '/yourPath'
  */
 
-module.exports = [
+export default [
   // {
   //   method: 'GET | POST | PUT | DELETE | etc...',
   //   url: `your url`,

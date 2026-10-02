@@ -25,6 +25,22 @@ const { actions, model, toBoom, found, boom }: any = new BaseController({
  * or get one item by its name, with a 404 when there is none:
  *     return found(await model.findOne({ name: req.params.name }))
  * Then add a route for the action in the route file of this controller
+ *
+ * Changing a default action (index, read, create, update, delete), here in the controller:
+ * actions.index = async (req: any, reply: any) => {
+ *   try {
+ *     return await model.find().sort({ name: 1 })
+ *   } catch (err) {
+ *     throw toBoom(err)
+ *   }
+ * }
+ * or wrap it to keep its behavior:
+ * const baseCreate = actions.create
+ * actions.create = async (req: any, reply: any) => {
+ *   req.body.name = req.body.name.trim()
+ *   return baseCreate(req, reply)
+ * }
+ * Changing an action in the route file has no effect, the routes already use the actions from here
  */
 
 export default actions

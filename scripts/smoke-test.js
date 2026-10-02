@@ -170,6 +170,9 @@ const main = async () => {
   const routeSource = fs.readFileSync(tagRoute, 'utf8');
   check('the templates provide the helpers for custom actions', controllerSource.includes('const { actions, model, toBoom, found, boom }') && routeSource.includes('const { routes, handler, path, schema }'), controllerSource + routeSource);
   fs.writeFileSync(tagController, controllerSource.replace('\nexport default actions', `
+const baseTest = actions.test
+actions.test = async (req: any, reply: any) => \`wrapped: \${await baseTest(req, reply)}\`
+
 actions.byLabel = async (req: any, reply: any) => {
   try {
     return found(await model.findOne({ label: req.params.label }))
@@ -179,7 +182,7 @@ actions.byLabel = async (req: any, reply: any) => {
 }
 
 export default actions`));
-  fs.writeFileSync(tagRoute, routeSource.replace('\nexport default routes', '\nexport default [...routes, { method: \'GET\', url: `${path}/by-label/:label`, handler: handler.byLabel }]'));
+  fs.writeFileSync(tagRoute, routeSource.replace('\nexport default routes', '\nexport default [...routes.filter((route: any) => route.method !== \'DELETE\'), { method: \'GET\', url: `${path}/by-label/:label`, handler: handler.byLabel }]'));
 
   result = await runJson(projectDir, ['list']);
   check('naf list shows the models', ['blog-post', 'post', 'category', 'product', 'tag'].every((name) => result.json?.models?.includes(name)), result.output);
@@ -211,6 +214,10 @@ export default actions`));
   const paths = Object.keys(res.json?.paths || {});
   check('Swagger lists the CRUD routes', paths.includes('/blog-posts') && paths.includes('/blog-posts/{id}') && paths.includes('/articles'), paths.join(', '));
   check('Swagger lists the custom action', paths.includes('/tags/by-label/{label}'), paths.join(', '));
+  res = await request('GET', '/tags/test');
+  check('a wrapped default action keeps its behavior', res.status === 200 && res.text === 'wrapped: tag works!!!', `${res.status} ${res.text}`);
+  res = await request('DELETE', '/tags/000000000000000000000000');
+  check('a removed default route is gone', res.status === 404 && res.text.includes('Route DELETE'), `${res.status} ${res.text}`);
   res = await request('GET', '/blog-posts/not-an-id');
   check('GET with an invalid id returns 400', res.status === 400, `${res.status} ${res.text}`);
   res = await request('POST', '/blog-posts', {});

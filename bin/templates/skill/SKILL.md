@@ -23,4 +23,7 @@ Custom action (anything besides CRUD), written by hand without reading `src/core
 - `src/controllers/<name>.controller.ts`: take `actions, model, toBoom, found` from `new BaseController(...)`, add `actions.<action> = async (req: any, reply: any) => { try { return found(await model.findOne(...)) } catch (err) { throw toBoom(err) } }` before the export. `found` throws a 404 for null, `toBoom` a 400 for invalid data or ids.
 - `src/routes/<name>.route.ts`: take `routes, handler, path` from `new BaseRoute(...)` and `export default [...routes, { method: 'GET', url: \`${path}/<action>\`, handler: handler.<action> }]`.
 - Optional: add `<action>: { tags, summary, params }` to the export of `src/schemas/<name>.schema.ts` and `schema: schema.<action>` to the route.
+
+Change a default action (`index`, `read`, `create`, `update`, `delete`) only in the controller: replace it (`actions.index = async (req: any, reply: any) => ...`) or wrap it (`const baseCreate = actions.create; actions.create = async (req: any, reply: any) => { ...; return baseCreate(req, reply) }`). Changing `handler` in the route file has no effect. To remove a default route, export `routes.filter((route: any) => route.method !== 'DELETE')` from the route file.
+
 After generating, run the `typecheck` command from naf's JSON output, then tell the user in their language which routes now exist. Each model with CRUD has exactly `GET /<route>`, `GET /<route>/:id`, `POST /<route>`, `PUT /<route>/:id` and `DELETE /<route>/:id`.

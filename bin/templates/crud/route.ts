@@ -20,6 +20,10 @@ const { routes, handler, path, schema }: any = new BaseRoute({
  * ]
  * A fixed url such as `${path}/by-name/:name` is matched before `${path}/:id`
  * The schema is additional, add it in the schema file of this controller
+ *
+ * Removing a default route, e.g. no delete:
+ * export default routes.filter((route: any) => route.method !== 'DELETE')
+ * To change what a default route does, change its action in the controller, not here
  */
 
 export default routes

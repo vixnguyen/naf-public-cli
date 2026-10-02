@@ -5,6 +5,8 @@ description: Create API resources (models with CRUD routes, controllers, request
 
 Use the naf CLI from the project root instead of writing these files by hand. If `naf` is not found, use `npx @vixnguyen/naf` instead.
 
+If the user names a resource without saying its fields, ask before generating anything: which fields it should have, or whether to create it with only a required `name` field. Ask one short question covering all such resources, in the user's language. When the fields are given, generate right away without asking.
+
 - See what exists: `naf list --json`
 - New model with CRUD routes: `naf model <name> --fields "<fields>" --crud --json`
 - Several models at once (preferred): create `plan.json` with your file writing tool (not a shell heredoc), e.g. `{"resources":[{"name":"post","fields":"title:string! author:ref(user)"}]}`, run `naf plan plan.json --json`, then delete `plan.json`. Nothing is generated if the plan has a mistake.

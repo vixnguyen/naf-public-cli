@@ -163,6 +163,24 @@ const main = async () => {
   result = await runJson(projectDir, ['model', 'tag', '--fields', 'label:string!', '--crud']);
   check('naf model works with flags', result.code === 0 && result.json?.modified?.includes('src/routes/app.route.ts'), result.output);
 
+  // add a custom action the way the skill describes it
+  const tagController = path.join(projectDir, 'src', 'controllers', 'tag.controller.ts');
+  const tagRoute = path.join(projectDir, 'src', 'routes', 'tag.route.ts');
+  const controllerSource = fs.readFileSync(tagController, 'utf8');
+  const routeSource = fs.readFileSync(tagRoute, 'utf8');
+  check('the templates provide the helpers for custom actions', controllerSource.includes('const { actions, model, toBoom, found, boom }') && routeSource.includes('const { routes, handler, path, schema }'), controllerSource + routeSource);
+  fs.writeFileSync(tagController, controllerSource.replace('\nexport default actions', `
+actions.byLabel = async (req: any, reply: any) => {
+  try {
+    return found(await model.findOne({ label: req.params.label }))
+  } catch (err) {
+    throw toBoom(err)
+  }
+}
+
+export default actions`));
+  fs.writeFileSync(tagRoute, routeSource.replace('\nexport default routes', '\nexport default [...routes, { method: \'GET\', url: `${path}/by-label/:label`, handler: handler.byLabel }]'));
+
   result = await runJson(projectDir, ['list']);
   check('naf list shows the models', ['blog-post', 'post', 'category', 'product', 'tag'].every((name) => result.json?.models?.includes(name)), result.output);
 
@@ -192,6 +210,7 @@ const main = async () => {
   res = await request('GET', '/documentation/json');
   const paths = Object.keys(res.json?.paths || {});
   check('Swagger lists the CRUD routes', paths.includes('/blog-posts') && paths.includes('/blog-posts/{id}') && paths.includes('/articles'), paths.join(', '));
+  check('Swagger lists the custom action', paths.includes('/tags/by-label/{label}'), paths.join(', '));
   res = await request('GET', '/blog-posts/not-an-id');
   check('GET with an invalid id returns 400', res.status === 400, `${res.status} ${res.text}`);
   res = await request('POST', '/blog-posts', {});
@@ -224,6 +243,12 @@ const main = async () => {
   check('GET a deleted item returns 404', res.status === 404, `${res.status} ${res.text}`);
   res = await request('PUT', `/blog-posts/${id}`, { name: 'third' });
   check('PUT a deleted item returns 404', res.status === 404, `${res.status} ${res.text}`);
+  res = await request('POST', '/tags', { label: 'news' });
+  const tagId = res.json?._id;
+  res = await request('GET', '/tags/by-label/news');
+  check('a custom action returns its item', res.status === 200 && res.json?._id === tagId, `${res.status} ${res.text}`);
+  res = await request('GET', '/tags/by-label/missing');
+  check('a custom action returns 404 with found()', res.status === 404, `${res.status} ${res.text}`);
   res = await request('POST', '/categories', { name: 'Books' });
   const categoryId = res.json?._id;
   res = await request('POST', '/products', { name: 'Guide', price: 9.5, inStock: true, releasedAt: '2026-10-01T00:00:00.000Z', category: categoryId });

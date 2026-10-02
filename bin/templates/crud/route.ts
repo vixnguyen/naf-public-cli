@@ -1,29 +1,25 @@
 /**
  * The importer will return four objects
- * 1. handler: controller action to handle logical code
- * 2. path: the correct path for route
- * 3. schema: the api documentation
- * 4. routes: an array of crud routes
+ * 1. routes: an array of crud routes
+ * 2. handler: the actions of the controller, including the new ones
+ * 3. path: the url of the routes, e.g. /posts
+ * 4. schema: the request schemas, for the documentation and the validation
  */
 import { BaseRoute } from '@core/based/route'
 
-const { routes }: any = new BaseRoute({
+const { routes, handler, path, schema }: any = new BaseRoute({
 	controller: '__MODEL__''__PATH__''__DIR__'
 })
 
 /**
- * Adding new action here
- * For example:
- * const newRoutes = [
- *  {
- *    method: 'GET | POST | PUT | DELETE | etc...',
- *    url: `your url`,
- *    handler: `the action was defined in your controller`,
- *    schema: `this is additional`
- *  }
+ * Adding a route for a new action of the controller
+ * For example, replace the export below with:
+ * export default [
+ *   ...routes,
+ *   { method: 'GET', url: `${path}/by-name/:name`, handler: handler.byName, schema: schema.byName }
  * ]
- * and replace the export below with:
- * export default [...routes, ...newRoutes]
+ * A fixed url such as `${path}/by-name/:name` is matched before `${path}/:id`
+ * The schema is additional, add it in the schema file of this controller
  */
 
 export default routes

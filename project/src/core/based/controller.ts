@@ -8,6 +8,8 @@
  * {
  *    boom: is an object for handling error 
  *    model: data model for processing actions
+ *    toBoom: turns an error into a 400 for invalid data or ids, otherwise a 500
+ *    found: returns the document, or throws a 404 when it is null
  *    actions: is based action included CRUD and test action
  * }
  */
@@ -44,6 +46,8 @@ export class BaseController {
     return {
       boom: boom,
       model: dataModel,
+      toBoom: toBoom,
+      found: found,
       actions: {
         test: async (req: any, reply: any) => {
           try {

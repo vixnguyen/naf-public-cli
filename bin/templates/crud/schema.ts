@@ -14,6 +14,13 @@
  *   }
  * }
  * Note that fields missing from a response schema are removed from the response
+ *
+ * A new action of the controller can have its schema in the export below too, for example:
+ * byName: {
+ *   tags,
+ *   summary: 'List the items with a name',
+ *   params: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] }
+ * }
  */
 const tags = ['__MODEL__']
 

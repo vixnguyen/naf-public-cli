@@ -1,6 +1,10 @@
 # Naf CLI 
 The CLI helps to create a Node API application with TypeScript, MongoDB, Fastify and Swagger.
 
+## Why naf
+
+Naf started long before AI coding agents, to cut the time it takes to build a Node API. Agents now write that code in minutes, so saving time is no longer the point. What still matters is how much the agent has to write, read and fix. With naf, an agent runs one command for code that is already tested, instead of writing and debugging it. That saves tokens and money, and the result is the same every time. See the [benchmark](#benchmark).
+
 ## Setting up
 
 #### 1. Installation

@@ -53,9 +53,32 @@ Models have fields such as `title:string! price:number author:ref(user)`, where 
 
 Add `--json` for a JSON output. The readme of the generated project describes every option, and `naf help` lists them.
 
-#### Using with Claude Code
+#### Working with Claude Code
 
-Every new project includes a Claude Code skill, so you can ask Claude Code in your own language, for example "create an API to manage products with a name, price and stock". Claude Code then runs the `naf` commands instead of writing the files by hand, which uses fewer tokens and keeps the generated code consistent. Run `naf skill` in an existing project to add or update the skill.
+Every new project includes a Claude Code skill. Describe the API you want in your own language, and Claude Code runs the `naf` commands for you instead of writing the files by hand. This uses fewer tokens and keeps the code the same as `naf` generates it.
+
+1. Create a project and open it in Claude Code:
+
+   `naf init shop`
+
+   `cd shop`
+
+   `claude`
+
+2. Ask for what you need, for example:
+
+   * "Create an API for products with a name, a required price, a stock quantity and a category"
+   * "Tạo API quản lý đơn hàng có tổng tiền, trạng thái đã thanh toán và khách hàng"
+   * "Add an action to find a product by its name"
+   * "Don't allow deleting products"
+
+   Name the fields of each resource. If you don't, Claude Code asks for them before creating anything. The code always uses English names, whatever language you write in.
+
+3. Allow the `naf` commands when Claude Code asks for permission. It then checks the code with the `typecheck` script and lists the new routes.
+
+4. Run the API as described in [Run](#3-run) and try the routes in the Swagger documentation.
+
+After updating naf, run `naf skill` in your projects to update the skill. The skill works with projects created by naf 2.0 or later.
 
 > Note that the generating script only support when you run it at the root folder of your project.
 

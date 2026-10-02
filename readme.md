@@ -65,6 +65,12 @@ Every new project includes a Claude Code skill. Describe the API you want in you
 
    `claude`
 
+   Or let Claude Code create it: run `claude` in an empty folder and ask
+
+   > Create a new API project named shop with `npx @vixnguyen/naf@2 init shop`, then follow its `.claude/skills/naf/SKILL.md`
+
+   Always give the full package name `@vixnguyen/naf`. The npm package called `naf` is a different project.
+
 2. Ask for what you need, for example:
 
    * "Create an API for products with a name, a required price, a stock quantity and a category"

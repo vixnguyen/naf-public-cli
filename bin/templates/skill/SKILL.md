@@ -3,7 +3,7 @@ name: naf
 description: Create API resources (models with CRUD routes, controllers, request schemas) in this Naf project. Use when the user asks, in any language, for new data, resources, endpoints or fields.
 ---
 
-Use the naf CLI from the project root instead of writing these files by hand. If `naf` is not found, use `npx @vixnguyen/naf` instead.
+Use the naf CLI from the project root instead of writing these files by hand. If `naf` is not found, use `npx @vixnguyen/naf@2` instead, never the unrelated `naf` package.
 
 If the user names a resource without saying its fields, ask before generating anything: which fields it should have, or whether to create it with only a required `name` field. Ask one short question covering all such resources, in the user's language. When the fields are given, generate right away without asking.
 

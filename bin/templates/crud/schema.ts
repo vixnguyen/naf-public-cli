@@ -20,7 +20,7 @@ const tags = ['__MODEL__']
 const body = {
   type: 'object',
   properties: {
-    name: { type: 'string' }
+    __BODY_PROPERTIES__
   },
   additionalProperties: false
 }
@@ -46,7 +46,7 @@ export default {
   create: {
     tags,
     summary: 'Create a new item',
-    body: { ...body, required: ['name'] }
+    body: { ...body, required: __REQUIRED__ }
   },
   update: {
     tags,

@@ -39,8 +39,23 @@ Scaffold  | Usage
 ---       | ---
 [Model]      | `naf model`
 [Controller, Route, Schema]      | `naf controller`
+[Several models with CRUD]      | `naf plan <file>`
+[List of models and controllers]      | `naf list`
+[Claude Code skill]      | `naf skill`
 
 Names must be lowercase kebab-case, for example `blog-post`. Controllers can also be given as a relative path, for example `admin/blog-post`.
+
+Models have fields such as `title:string! price:number author:ref(user)`, where `!` means required. Every command also runs without prompts when the name is given, for example:
+
+`naf init shop --db shopdb`
+
+`naf model post --fields "title:string! body:string" --crud`
+
+Add `--json` for a JSON output. The readme of the generated project describes every option, and `naf help` lists them.
+
+#### Using with Claude Code
+
+Every new project includes a Claude Code skill, so you can ask Claude Code in your own language, for example "create an API to manage products with a name, price and stock". Claude Code then runs the `naf` commands instead of writing the files by hand, which uses fewer tokens and keeps the generated code consistent. Run `naf skill` in an existing project to add or update the skill.
 
 > Note that the generating script only support when you run it at the root folder of your project.
 

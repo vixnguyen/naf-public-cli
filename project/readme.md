@@ -48,10 +48,23 @@ You can use the `naf` command for code generating:
 ### For model generating, run command:
 `naf model`
 
-#### The system will ask you enter a model name, for example `blog-post`:
+#### The system will ask you enter a model name, for example `blog-post`, and its fields:
 
  * Your model named `blog-post.model.ts` will be generated in src/models
  * If you choose to create CRUD actions and routing, a controller, route and schema named `blog-post` will be generated too
+
+#### Fields
+Fields are written as `name:type`, separated by spaces, for example `title:string! price:number author:ref(user)`:
+
+Type  | Usage
+---   | ---
+`string` | Text
+`number` | Amounts and counts
+`boolean` | Yes/no flags
+`date` | Dates and times, sent as ISO strings such as `2026-10-01T00:00:00.000Z`
+`ref(<model>)` | Id of an item of another model, for example `author:ref(user)`
+
+A trailing `!` makes the field required. The default is `name:string!`. The fields are used for the model and for the request schema, so invalid requests return 400.
 
 ### For controller generating, run command:
 `naf controller`
@@ -74,7 +87,38 @@ You can use the `naf` command for code generating:
 
 Routes generated in the root of src/routes are added to `src/routes/app.route.ts` automatically. Routes in a nested folder must be imported there by hand.
 
-If you choose to create CRUD actions, the system will also ask for a model name and generate the model if it does not exist yet.
+If you choose to create CRUD actions, the system will also ask for a model name and its fields, and generate the model if it does not exist yet.
+
+### Without prompts
+Give the name as an argument to skip the prompts, which is useful in scripts:
+
+`naf model post --fields "title:string! body:string author:ref(user)" --crud`
+
+`naf controller admin/report --route admin/reports`
+
+`naf controller shop --model product --fields "name:string! price:number"`
+
+Add `--json` to any command for a JSON output, and see `naf help` for all options. A command which fails exits with code 1.
+
+### Several models at once
+Write a plan file and run `naf plan plan.json`, or `naf plan -` to read it from the input:
+
+```json
+{"resources": [
+  {"name": "category", "fields": "name:string!"},
+  {"name": "product", "fields": "name:string! price:number! category:ref(category)"}
+]}
+```
+
+Every model gets CRUD actions and routes, unless it has `"crud": false`. A model can also set `"route"`. Nothing is generated if the plan has a mistake.
+
+### List the models and controllers
+`naf list`
+
+### Using with Claude Code
+Your project includes a Claude Code skill in `.claude/skills/naf/SKILL.md`. Ask Claude Code for what you need in your own language, for example "create an API to manage products with a name, price and stock", and it uses the `naf` commands instead of writing the files by hand. This uses fewer tokens and keeps the code the same as `naf` would generate it.
+
+After updating naf, run `naf skill` to update the skill.
 
 ### You can find all possible blueprints in the table below:
 
@@ -82,5 +126,8 @@ Scaffold  | Usage
 ---       | ---
 [Model]      | `naf model`
 [Controller, Route, Schema]      | `naf controller`
+[Several models with CRUD]      | `naf plan <file>`
+[List of models and controllers]      | `naf list`
+[Claude Code skill]      | `naf skill`
 
 `Note that, Your models always generated in src/models`

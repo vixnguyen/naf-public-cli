@@ -1,21 +1,29 @@
 {
   "name": "@vixnguyen/naf",
-  "version": "1.0.20",
+  "version": "2.0.0",
   "description": "The CLI helps to create a Node API application with MongoDB, Fastify and Swagger.",
-  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node scripts/smoke-test.js"
   },
   "bin": {
     "naf": "bin/execute"
   },
+  "files": [
+    "bin",
+    "options",
+    "project"
+  ],
   "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "fs": "0.0.1-security",
-    "fs-extra": "^7.0.1",
-    "inquirer": "^6.2.1",
-    "shelljs": "^0.8.3"
+    "chalk": "^6.0.0",
+    "fs-extra": "^11.4.0",
+    "inquirer": "^14.2.2",
+    "shelljs": "^0.10.0"
   },
   "repository": {
     "type": "git",

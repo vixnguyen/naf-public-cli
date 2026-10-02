@@ -23,6 +23,10 @@
 //   }
 // }
 
-exports.__ROUTE__Schema = {
+// exports.__ROUTE__Schema = {
+//   // adding schema here
+// }
+
+export default {
   // adding schema here
 }

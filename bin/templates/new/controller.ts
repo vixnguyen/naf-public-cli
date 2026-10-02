@@ -1,10 +1,11 @@
 /**
  * Import area
  * Example for the basic importing:
- * const yourModel = require(`@models/yourModelName.model`)
+ * import yourModel from '@models/yourModelName.model'
+ * import * as boom from '@hapi/boom'
  */
 
-module.exports = {
+export default {
   // test: async (req, reply) => {
   //   try {
   //     return `Your controller works!!!`

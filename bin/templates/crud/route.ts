@@ -5,8 +5,10 @@
  * 3. schema: the api documentation
  * 4. routes: an array of crud routes
  */
-let { routes } = require('@core/based/route')({
-  controller: '__MODEL__''__PATH__''__DIR__'
+import { BaseRoute } from '@core/based/route'
+
+const { routes }: any = new BaseRoute({
+	controller: '__MODEL__''__PATH__''__DIR__'
 })
 
 /**
@@ -20,7 +22,8 @@ let { routes } = require('@core/based/route')({
  *    schema: `this is additional`
  *  }
  * ]
- * routes = [...route, ...newRoutes]
+ * and replace the export below with:
+ * export default [...routes, ...newRoutes]
  */
 
-module.exports = routes
+export default routes

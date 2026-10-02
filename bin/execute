@@ -3,14 +3,14 @@
  * This is readonly file
  */
 const cmdAlias = 'naf';
-const inquirer = require('inquirer');
-const fs = require('fs');
-const fsExtra = require('fs-extra');
-const shell = require('shelljs');
-const chalk = require('chalk');
-const path = require('path');
+import inquirer from 'inquirer';
+import fs from 'fs';
+import fsExtra from 'fs-extra';
+import shell from 'shelljs';
+import chalk from 'chalk';
+import path from 'path';
 
-const projectInitDir = path.dirname(__dirname);
+const projectInitDir = path.dirname(import.meta.dirname);
 const projectDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
@@ -18,7 +18,6 @@ const templateCrudDir = `${projectInitDir}/bin/templates/crud/`;
 // template dir for empty file
 const templateNewDir = `${projectInitDir}/bin/templates/new/`;
 const routeDir = `${srcDir}routes/`;
-var appDir = path.dirname(require.main.filename);
 
 // get from node process
 const actor = process.argv[2];
@@ -64,8 +63,8 @@ let dataForGenerating = {
  * 2. Controller for controller and route name validation
  */
 const INQUIRER_REGEX = {
-  model: /^[a-z]+(-[a-z]+)*$/g,
-  controller: /^([a-z]+(-[a-z]+)*)+(\/([a-z]+(-[a-z]+)*))*$/g
+  model: /^[a-z]+(-[a-z]+)*$/,
+  controller: /^([a-z]+(-[a-z]+)*)+(\/([a-z]+(-[a-z]+)*))*$/
 };
 
 /**
@@ -179,12 +178,15 @@ const CREATING_CONTROLLER_STEPS = [
  * @param fileName is name of file
  * @output new object it's contain a file metadata
  */
-newFileObj = (type, fileName) => {
+const newFileObj = (type, fileName) => {
   let folderOfType = `${type}s`;
   let objName = fileName;
   let folderDir = '';
   if (type === 'schema') {
     objName = kebabToCamel(fileName);
+  } else if (type === 'controller' && dataForGenerating.modelName) {
+    // crud controller must point to the chosen model, not to itself
+    objName = dataForGenerating.modelName;
   } else if (type === 'route') {
     // objName = dataForGenerating.routeName
   }
@@ -195,7 +197,7 @@ newFileObj = (type, fileName) => {
   return {
     type: type,
     name: objName,
-    fileName: `${fileName}.${type}.js`,
+    fileName: `${fileName}.${type}.ts`,
     dir: `${srcDir}${folderOfType}${folderDir}`,
     folderName: dataForGenerating.folderName,
     templateDir: dataForGenerating.templateDir || templateCrudDir
@@ -205,7 +207,7 @@ newFileObj = (type, fileName) => {
 /**
  * Adding task to todolist if have controller
  */
-defineActions = (hasAction) => {
+const defineActions = (hasAction) => {
   if (dataForGenerating.controllerName) {
     let newFiles = {
       controller: newFileObj('controller', dataForGenerating.controllerName),
@@ -220,14 +222,14 @@ defineActions = (hasAction) => {
 /**
  * Config for new project generate
  */
-projectConfig = (options) => {
+const projectConfig = (options) => {
   // project generated
   const writePath = `${options.projectDir}/`;
   // project options template
   const optionPath = `${projectInitDir}/options/`;
   // files need to change
   const files = [
-    'src/config/db.js',
+    'src/config/db.ts',
     'package.json'
   ];
   let contents;
@@ -239,6 +241,10 @@ projectConfig = (options) => {
     contents = contents.replace(/__DB_NAME__/g, options.dbName);
     // create a new file with contents
     fs.writeFileSync(`${writePath}${fileName}`, contents, 'utf8');
+  }
+  // npm does not publish .gitignore files, so the template keeps it as gitignore
+  if (fs.existsSync(`${writePath}gitignore`)) {
+    fs.renameSync(`${writePath}gitignore`, `${writePath}.gitignore`);
   }
   console.log(chalk.cyan(`Project ${options.projectName} initialized!`));
 }
@@ -252,7 +258,7 @@ projectConfig = (options) => {
  *    help: for help
  * }
  */
-generator = {
+const generator = {
   init: async () => {
     await inquirer.prompt(PROJECT_INIT_STEPS).then(async(answers) => {
       const projectName = answers['projectName'];
@@ -351,7 +357,7 @@ generator = {
 /**
  * Main duty
  */
-run = () => {
+const run = () => {
   if (generator[actor] && typeof generator[actor] === 'function') {
     generator[actor]();
   } else {
@@ -365,7 +371,7 @@ run = () => {
  * 1. Controller name
  * 2. A folder contained controller
  */
-analystController = (str) => {
+const analystController = (str) => {
   let hasFolder = false;
   let arr = str.split('/');
   let length = arr.length;
@@ -378,14 +384,14 @@ analystController = (str) => {
     // set controller name is last path of the input
     dataForGenerating.controllerName = arr[length - 1];
     // set folder name is remain of input excluded controller name
-    dataForGenerating.folderName = str.replace(`/${dataForGenerating.controllerName}`, '');
+    dataForGenerating.folderName = arr.slice(0, -1).join('/');
   }
 }
 
 /**
  * Process file
  */
-processFiles = () => {
+const processFiles = () => {
   let target = {};
   for (let key in todoList) {
     target = todoList[key];
@@ -399,7 +405,7 @@ processFiles = () => {
 /**
  * Display notifications after files created
  */
-processNotifications = () => {
+const processNotifications = () => {
   const typeMsgs = {
     added: `File(s) added:`
   };
@@ -420,12 +426,12 @@ processNotifications = () => {
  * @params target is file output metadata
  * @params isRoute check if the output file is route or not? to process another action
  */
-createDirectoryContents = (target, isRoute = false) => {
+const createDirectoryContents = (target, isRoute = false) => {
   if (!fs.existsSync(target['dir'])) {
     shell.mkdir('-p', target['dir']);
   }
   // get template file
-  const origFilePath = `${target['templateDir']}${target['type']}.js`;
+  const origFilePath = `${target['templateDir']}${target['type']}.ts`;
   const stats = fs.statSync(origFilePath);
   let fileCreated = '';
   let secondReplace = '';
@@ -497,20 +503,23 @@ createDirectoryContents = (target, isRoute = false) => {
  * Modify app route if the new route was created
  * @param name is name of  the new route, which just created
  */
-modifyAppRoute = (name) => {
-  const indexRoutes = `${routeDir}app.route.js`;
-  const routeName = `${name}Route`;
+const modifyAppRoute = (name) => {
+  const indexRoutes = `${routeDir}app.route.ts`;
+  const routeName = `${kebabToCamel(name)}Route`;
   const routeFile = `${name}.route`;
   let fileContents = fs.readFileSync(`${indexRoutes}`, 'utf8');
-  regex = /(module\.exports = \[)(.|\n)*(\])/g;
+  // work with LF line endings so the regexes also match files checked out with CRLF (Windows)
+  const eol = fileContents.includes('\r\n') ? '\r\n' : '\n';
+  fileContents = fileContents.replace(/\r\n/g, '\n');
+  const regex = /(export default \[)(.|\n)*(\])/g;
   // module.exports = []
-  checkModuleNull = /(module\.exports = \[)(\n)*(\])/g;
+  const checkModuleNull = /(export default \[)(\n)*(\])/g;
   // ...namefile, or ...namefile, // comment 
-  checkLastLine = /[a-zA-Z]+\,\s*[\sa-zA-Z\/\/]*\n\]/g;
+  const checkLastLine = /[a-zA-Z]+\,\s*[\sa-zA-Z\/\/]*\n\]/g;
   //...namefile // comment 
-  checkLastLineSpecialComma = /[a-zA-Z]+\s\/\/(\s?[a-z]+)?\n*\]/g;
-  checkBreakline = /\n*(?=(module\.exports = \[)(.|\n)*(\]))/g;
-  findModuleToInsertImport = /\n(?=\nmodule\.exports)/g;
+  const checkLastLineSpecialComma = /[a-zA-Z]+\s\/\/(\s?[a-z]+)?\n*\]/g;
+  const checkBreakline = /\n*(?=(export default \[)(.|\n)*(\]))/g;
+  const findModuleToInsertImport = /\n(?=\nexport default)/g;
 
   // app route has content & the new route contained in root route folder
   if (regex.test(fileContents) && !dataForGenerating.folderName) {
@@ -530,9 +539,9 @@ modifyAppRoute = (name) => {
     fileContents = fileContents.replace(/\n*\]/g, `\n\t...${routeName}\n]`);
     fileContents = fileContents.replace(checkBreakline, '\n');
     // requiring new route before module export
-    fileContents = fileContents.replace(findModuleToInsertImport, `\nconst ${routeName} = require('./${routeFile}')\n`);
-    // apply new content to the app route
-    fs.writeFileSync(`${indexRoutes}`, fileContents, 'utf8');
+    fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}'\n`);
+    // apply new content to the app route, keeping its original line endings
+    fs.writeFileSync(`${indexRoutes}`, fileContents.replace(/\n/g, eol), 'utf8');
     return `${indexRoutes}`;
   } else {
     return false;
@@ -544,7 +553,7 @@ modifyAppRoute = (name) => {
  * @input abc-zyz
  * @output abcXyz
  */
-kebabToCamel = (string) => {
+const kebabToCamel = (string) => {
   return string = string.replace(/-([a-z])/g, (g) => {
     return g[1].toUpperCase(); 
   });
@@ -555,7 +564,7 @@ kebabToCamel = (string) => {
  * @input abc-zyz
  * @output AbcXyz
  */
-kebabToUpperCamel = (string) => {
+const kebabToUpperCamel = (string) => {
   string = string.replace(/-([a-z])/g, (g) => {
     return g[1].toUpperCase(); 
   });

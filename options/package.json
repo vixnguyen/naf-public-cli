@@ -2,27 +2,40 @@
   "name": "__PROJECT_NAME__",
   "version": "1.0.0",
   "description": "A fast REST APIs with Node.js, MongoDB, Fastify and Swagger.",
-  "main": "index.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
-    "start": "./node_modules/nodemon/bin/nodemon.js ./src/index.js",
+    "start": "tsx watch ./src/index.ts",
+    "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Vix Nguyen <vinguyen.fitsgu@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "boom": "^7.2.2",
-    "fastify": "^1.13.0",
-    "fastify-mongodb": "^0.9.1",
-    "fastify-swagger": "^0.15.3",
-    "module-alias": "^2.1.0",
-    "mongoose": "^5.3.14",
-    "nodemon": "^1.18.7"
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
+    "@hapi/boom": "^10.0.1",
+    "fastify": "^5.12.3",
+    "module-alias": "^2.3.4",
+    "mongoose": "^9.10.0",
+    "pino-pretty": "^13.1.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.4",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   },
   "_moduleAliases": {
-    "@core": "./src/core",
-    "@controllers": "./src/controllers",
-    "@models": "./src/models",
-    "@routes": "./src/routes",
-    "@schemas": "./src/schemas"
+    "@core": "src/core",
+    "@controllers": "src/controllers",
+    "@models": "src/models",
+    "@routes": "src/routes",
+    "@schemas": "src/schemas"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

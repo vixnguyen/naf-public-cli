@@ -177,8 +177,11 @@ try {
   check('smoke test finished', false);
   console.error(err.message);
 } finally {
-  if (server) {
+  // wait for the server to exit, Windows keeps its files locked until then
+  if (server && server.exitCode === null) {
+    const exited = new Promise((resolve) => server.once('exit', resolve));
     server.kill();
+    await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5000))]);
   }
   try {
     fs.rmSync(workDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });

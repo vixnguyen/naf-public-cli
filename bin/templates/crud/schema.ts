@@ -36,7 +36,7 @@ const body = {
 const querystring = {
   type: 'object',
   properties: {
-    __BODY_PROPERTIES__,
+    __QUERY_PROPERTIES__,
     sort: { type: 'string', description: 'Comma separated fields to sort by, - for descending, e.g. -price,name' }
   }
 }

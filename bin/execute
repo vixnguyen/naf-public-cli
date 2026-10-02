@@ -48,6 +48,8 @@ try {
   }));
 } catch (err) {
   argsError = err.message;
+  // keep the JSON output for the error
+  options = { json: process.argv.includes('--json') };
 }
 
 /**
@@ -57,6 +59,8 @@ try {
 const DEFAULT_FIELDS = 'name:string!';
 const FIELD_REGEX = /^([a-z][a-zA-Z0-9]*):(string|number|boolean|date|ref\(([a-z]+(?:-[a-z]+)*)\))(!?)$/;
 const RESERVED_FIELDS = ['id', '_id', '__v', 'sort'];
+// names mongoose reserves for its documents, a field with one of them may break the model
+const MONGOOSE_RESERVED = ['collection', 'emit', 'errors', 'get', 'init', 'isModified', 'isNew', 'listeners', 'populated', 'prototype', 'remove', 'removeListener', 'save', 'toObject', 'validate'];
 
 /**
  * Parse the fields text
@@ -64,7 +68,10 @@ const RESERVED_FIELDS = ['id', '_id', '__v', 'sort'];
  */
 const parseFields = (text) => {
   const fields = [];
-  const tokens = (text || '').split(/[\s,]+/).filter(Boolean);
+  if (typeof text !== 'string') {
+    return { fields, error: 'Fields must be text such as "title:string! price:number"' };
+  }
+  const tokens = text.split(/[\s,]+/).filter(Boolean);
   if (!tokens.length) {
     return { fields, error: 'At least one field is required, e.g. "title:string!"' };
   }
@@ -80,6 +87,9 @@ const parseFields = (text) => {
     if (RESERVED_FIELDS.includes(name)) {
       return { fields, error: `"${name}" is added automatically, remove it from the fields` };
     }
+    if (MONGOOSE_RESERVED.includes(name)) {
+      return { fields, error: `"${name}" is reserved by mongoose, choose another field name` };
+    }
     if (fields.some((field) => field.name === name)) {
       return { fields, error: `Field "${name}" is defined twice` };
     }
@@ -89,9 +99,19 @@ const parseFields = (text) => {
 };
 
 const MONGOOSE_TYPES = { string: 'String', number: 'Number', boolean: 'Boolean', date: 'Date' };
+// request bodies accept null to clear a field, a required field still rejects it
 const SCHEMA_TYPES = {
+  string: `{ type: 'string', nullable: true }`,
+  number: `{ type: 'number', nullable: true }`,
+  boolean: `{ type: 'boolean', nullable: true }`,
+  date: `{ type: 'string', format: 'date-time', nullable: true }`,
+  ref: `{ type: 'string', pattern: '^[0-9a-fA-F]{24}$', nullable: true }`
+};
+
+// query string filters, a number is checked as text so that e.g. " " is not read as 0
+const QUERY_TYPES = {
   string: `{ type: 'string' }`,
-  number: `{ type: 'number' }`,
+  number: `{ type: 'string', pattern: '^-?\\\\d+(\\\\.\\\\d+)?$', description: 'number' }`,
   boolean: `{ type: 'boolean' }`,
   date: `{ type: 'string', format: 'date-time' }`,
   ref: `{ type: 'string', pattern: '^[0-9a-fA-F]{24}$' }`
@@ -108,6 +128,9 @@ const renderModelFields = (fields) => fields.map((field) => {
 
 // body properties of the request schema
 const renderSchemaProperties = (fields) => fields.map((field) => `${field.name}: ${SCHEMA_TYPES[field.type]}`).join(',\n    ');
+
+// filters of the list
+const renderQueryProperties = (fields) => fields.map((field) => `${field.name}: ${QUERY_TYPES[field.type]}`).join(',\n    ');
 
 const renderRequired = (fields) => `[${fields.filter((field) => field.required).map((field) => `'${field.name}'`).join(', ')}]`;
 
@@ -351,7 +374,27 @@ const defineActions = (hasAction) => {
     };
     todoList = { ...todoList, ...newFiles };
   }
+}
+
+// prepared files which already exist, e.g. src/routes/app.route.ts for a model named app
+const existingTargets = () => Object.values(todoList)
+  .filter(Boolean)
+  .map((target) => `${target['dir']}/${target['fileName']}`)
+  .filter((file) => fs.existsSync(file))
+  .map((file) => relative(file));
+
+/**
+ * Generate the prepared files, or nothing when one of them already exists
+ * @output true when the files were generated
+ */
+const generateFiles = () => {
+  const existing = existingTargets();
+  if (existing.length) {
+    fail(`Nothing was generated, already exists: ${existing.join(', ')}`);
+    return false;
+  }
   processFiles();
+  return true;
 }
 
 /**
@@ -550,7 +593,7 @@ const generator = {
       }
       prepareModel({ name, fields, crud: options.crud, route: options.route });
       defineActions();
-      return report();
+      return generateFiles() && report();
     }
     if (!canPrompt()) {
       return fail(`Usage: ${cmdAlias} model <name> [--fields "<field>:<type>[!] ..."] [--crud] [--route <route>]`);
@@ -568,7 +611,7 @@ const generator = {
     }
     prepareModel({ name: modelName, fields, crud: model['hasAction'], route });
     defineActions();
-    report();
+    generateFiles() && report();
   },
   controller: async () => {
     if (!isProjectRoot()) {
@@ -602,7 +645,7 @@ const generator = {
       }
       prepareController();
       defineActions();
-      return report();
+      return generateFiles() && report();
     }
     if (!canPrompt()) {
       return fail(`Usage: ${cmdAlias} controller <name or path> [--route <route>] [--model <name> [--fields "<field>:<type>[!] ..."]]`);
@@ -641,7 +684,7 @@ const generator = {
     }
     prepareController();
     defineActions();
-    report();
+    generateFiles() && report();
   },
   plan: async () => {
     if (!isProjectRoot()) {
@@ -675,13 +718,29 @@ const generator = {
         errors.push(`${label}: defined twice`);
       }
       const crud = resource.crud !== false;
-      const fieldsText = Array.isArray(resource.fields) ? resource.fields.join(' ') : resource.fields;
+      const fieldsText = Array.isArray(resource.fields) && resource.fields.every((field) => typeof field === 'string') ? resource.fields.join(' ') : resource.fields;
+      if (fieldsText !== undefined && typeof fieldsText !== 'string') {
+        errors.push(`${label}: fields must be text such as "title:string! price:number" or a list of such fields`);
+        return null;
+      }
       const { fields, error } = checkModel({ name: resource.name, fieldsText, route: resource.route, crud }, knownModels);
       if (error) {
         errors.push(`${label}: ${error}`);
       }
       return { name: resource.name, fields, crud, route: resource.route };
     });
+    // a file of a resource may already exist, e.g. the route of a model named app
+    if (!errors.length) {
+      for (const resource of prepared) {
+        resetGenerating();
+        prepareModel(resource);
+        defineActions();
+        const existing = existingTargets();
+        if (existing.length) {
+          errors.push(`${resource.name}: already exists: ${existing.join(', ')}`);
+        }
+      }
+    }
     if (errors.length) {
       return fail(`Nothing was generated:\n${errors.join('\n')}`);
     }
@@ -689,6 +748,7 @@ const generator = {
       resetGenerating();
       prepareModel(resource);
       defineActions();
+      processFiles();
     }
     report();
   },
@@ -727,9 +787,15 @@ const generator = {
 /**
  * Main duty
  */
+// number of names each command takes, e.g. naf model <name>
+const MAX_POSITIONALS = { init: 1, model: 1, controller: 1, plan: 1, list: 0, skill: 0, help: 0 };
+
 const run = async () => {
   if (argsError) {
     return fail(argsError);
+  }
+  if (actor in MAX_POSITIONALS && positionals.length > MAX_POSITIONALS[actor]) {
+    return fail(`Unexpected argument "${positionals[MAX_POSITIONALS[actor]]}", see '${cmdAlias} help'`);
   }
   if (generator[actor] && typeof generator[actor] === 'function') {
     try {
@@ -885,6 +951,7 @@ const createDirectoryContents = (target, isRoute = false) => {
       // fields of the model and of the request schema, replaced by functions so a $ in them is kept as it is
       contents = contents.replace(/__FIELDS__/g, () => renderModelFields(fieldsForGenerating));
       contents = contents.replace(/__BODY_PROPERTIES__/g, () => renderSchemaProperties(fieldsForGenerating));
+      contents = contents.replace(/__QUERY_PROPERTIES__/g, () => renderQueryProperties(fieldsForGenerating));
       contents = contents.replace(/__REQUIRED__/g, () => renderRequired(fieldsForGenerating));
       // create a new file with contents
       fs.writeFileSync(writePath, contents, 'utf8');

@@ -51,11 +51,10 @@ export class BaseController {
     const toFieldValue = (key: string, value: any) => {
       const type = fieldType(key)
       if (type === 'Number') {
-        const number = Number(value)
-        if (value === '' || Number.isNaN(number)) {
+        if (!/^-?\d+(\.\d+)?$/.test(String(value))) {
           throw boom.badRequest(`Filter "${key}" must be a number`)
         }
-        return number
+        return Number(value)
       }
       if (type === 'Boolean') {
         if (value === true || value === 'true') {

@@ -196,6 +196,20 @@ export default actions`));
   check('a missing name fails instead of waiting for a prompt', result.code === 1, result.output);
   result = await runJson(projectDir, ['model', 'setting', '--fields', 'sort:number']);
   check('sort is refused as a field name', result.code === 1 && result.json?.error?.includes('sort'), result.output);
+  result = await runJson(projectDir, ['model', 'setting', '--fields', 'save:string']);
+  check('a name reserved by mongoose is refused', result.code === 1 && result.json?.error?.includes('mongoose'), result.output);
+  result = await runJson(projectDir, ['model', 'app', '--crud']);
+  check('a name clashing with an existing file generates nothing', result.code === 1 && result.json?.error?.includes('src/routes/app.route.ts') && !fs.existsSync(path.join(projectDir, 'src', 'models', 'app.model.ts')), result.output);
+  fs.writeFileSync(planFile, JSON.stringify({ resources: [{ name: 'health-check' }] }));
+  result = await runJson(projectDir, ['plan', planFile]);
+  check('a plan clashing with an existing file generates nothing', result.code === 1 && result.json?.error?.includes('health-check.route.ts') && !fs.existsSync(path.join(projectDir, 'src', 'models', 'health-check.model.ts')), result.output);
+  fs.writeFileSync(planFile, JSON.stringify({ resources: [{ name: 'setting', fields: 5 }] }));
+  result = await runJson(projectDir, ['plan', planFile]);
+  check('a plan with fields that are not text explains it', result.code === 1 && result.json?.error?.includes('fields must be text'), result.output);
+  result = await runJson(projectDir, ['model', 'setting', '--nope']);
+  check('an argument error is still JSON', result.code === 1 && typeof result.json?.error === 'string', result.output);
+  result = await runJson(projectDir, ['model', 'setting', 'extra']);
+  check('an extra argument is refused', result.code === 1 && result.json?.error?.includes('extra') && !fs.existsSync(path.join(projectDir, 'src', 'models', 'setting.model.ts')), result.output);
 
   fs.rmSync(path.join(projectDir, '.claude'), { recursive: true });
   result = await runJson(projectDir, ['skill']);
@@ -234,6 +248,10 @@ export default actions`));
   check('an unknown filter returns 400', res.status === 400 && res.text.includes('colour'), `${res.status} ${res.text}`);
   res = await request('GET', '/products?price=cheap');
   check('a filter with a wrong type returns 400', res.status === 400 && res.text.includes('price'), `${res.status} ${res.text}`);
+  res = await request('GET', '/products?price=%20');
+  check('a blank number filter returns 400', res.status === 400 && res.text.includes('price'), `${res.status} ${res.text}`);
+  res = await request('POST', '/products', { name: 'x', price: null });
+  check('null for a required field returns 400', res.status === 400 && res.text.includes('price'), `${res.status} ${res.text}`);
   res = await request('GET', '/products?sort=-colour');
   check('an unknown sort field returns 400', res.status === 400 && res.text.includes('colour'), `${res.status} ${res.text}`);
 
@@ -284,6 +302,9 @@ export default actions`));
   check('index filters a number', got === 'Atlas', got);
   got = await names(`/products?category=${categoryId}`);
   check('index filters a ref', got === 'Guide', got);
+  const map = (await request('GET', '/products?name=Map')).json?.[0];
+  res = await request('PUT', `/products/${map?._id}`, { inStock: null });
+  check('null clears an optional field', res.status === 200 && res.json?.inStock === null && res.json?.price === 5, `${res.status} ${res.text}`);
 };
 
 try {

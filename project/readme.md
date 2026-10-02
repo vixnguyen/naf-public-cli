@@ -64,7 +64,7 @@ Type  | Usage
 `date` | Dates and times, sent as ISO strings such as `2026-10-01T00:00:00.000Z`
 `ref(<model>)` | Id of an item of another model, for example `author:ref(user)`
 
-A trailing `!` makes the field required. The default is `name:string!`. The fields are used for the model and for the request schema, so invalid requests return 400. `sort` can't be a field name, it is used for sorting.
+A trailing `!` makes the field required. The default is `name:string!`. The fields are used for the model and for the request schema, so invalid requests return 400. Send `null` to clear an optional field. `sort` can't be a field name, it is used for sorting, and neither can the names mongoose reserves, such as `save`, `isNew` or `errors`.
 
 #### Filter and sort the list
 The list route of a model with CRUD, e.g. `GET /products`, filters by any field of the model and sorts by one or more fields:
@@ -76,7 +76,7 @@ Request  | Result
 `GET /products?sort=price` | Cheapest first
 `GET /products?sort=-price,name` | Most expensive first, then by name
 
-A filter matches the exact value, converted to the type of the field. An unknown field or a wrong value, e.g. `?price=cheap`, returns 400. The filters and `sort` are listed in the Swagger documentation.
+A filter matches the exact value, converted to the type of the field. Numbers are written as `20` or `-2.5`, dates as `2026-10-01T00:00:00.000Z`. An unknown field or a wrong value, e.g. `?price=cheap`, returns 400. The filters and `sort` are listed in the Swagger documentation.
 
 To change the list, e.g. to only return active items, replace `index` in the controller and use `parseQuery(req.query)` to keep the filters and sort, see the example in the controller.
 

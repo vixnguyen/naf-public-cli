@@ -775,19 +775,38 @@ const processFiles = () => {
   }
 }
 
+// command to type-check the project, based on the lock file of its package manager
+const typecheckCommand = () => {
+  if (fs.existsSync(`${projectDir}/pnpm-lock.yaml`)) {
+    return 'pnpm typecheck';
+  }
+  if (fs.existsSync(`${projectDir}/yarn.lock`)) {
+    return 'yarn typecheck';
+  }
+  if (fs.existsSync(`${projectDir}/bun.lock`) || fs.existsSync(`${projectDir}/bun.lockb`)) {
+    return 'bun run typecheck';
+  }
+  return 'npm run typecheck';
+};
+
 /**
  * Print what was generated, as JSON with --json
  */
 const report = () => {
+  const typecheck = notifications.added.length ? typecheckCommand() : undefined;
   if (options.json) {
     console.log(JSON.stringify({
       added: notifications.added.map((obj) => obj.name),
       modified: notifications.modified.map((obj) => obj.name),
       failed: notifications.failed.map((obj) => obj.msg),
-      notes: notifications.notes.map((obj) => obj.msg)
+      notes: notifications.notes.map((obj) => obj.msg),
+      typecheck
     }));
   } else {
     processNotifications();
+    if (typecheck) {
+      console.log(chalk.cyan(`Run '${typecheck}' to check the generated code.`));
+    }
   }
   if (notifications.failed.length) {
     process.exitCode = 1;

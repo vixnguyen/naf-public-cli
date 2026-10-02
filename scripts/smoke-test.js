@@ -156,6 +156,7 @@ const main = async () => {
   ] }));
   let result = await runJson(projectDir, ['plan', planFile]);
   check('naf plan creates several models', result.code === 0 && result.json?.added?.includes('src/models/product.model.ts') && result.json?.added?.includes('src/routes/category.route.ts'), result.output);
+  check('naf suggests the typecheck command', result.json?.typecheck === 'npm run typecheck', result.output);
   const productModel = fs.readFileSync(path.join(projectDir, 'src', 'models', 'product.model.ts'), 'utf8');
   check('the model has the fields', productModel.includes('price: { type: Number, required: true }') && productModel.includes("category: { type: mongoose.Schema.Types.ObjectId, ref: 'category' }"), productModel);
 

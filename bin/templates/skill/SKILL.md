@@ -16,4 +16,4 @@ Fields: space separated `name:type`, type is `string`, `number`, `boolean`, `dat
 Names: English, singular, kebab-case for models (`order-item`), camelCase for fields (`dueDate`), even when the user writes in another language. Routes are the plural of the model (`/order-items`, `/categories`), add `--route <route>` or `"route"` in the plan for another one.
 
 naf never overwrites files. To change an existing model, edit `src/models/<name>.model.ts` and the body in `src/schemas/<name>.schema.ts` by hand.
-After generating, run the `typecheck` script with the project's package manager (`pnpm typecheck` if there is a `pnpm-lock.yaml`, `yarn typecheck` for `yarn.lock`, otherwise `npm run typecheck`), then tell the user in their language which routes now exist.
+After generating, run the `typecheck` command from naf's JSON output, then tell the user in their language which routes now exist. Each model with CRUD has exactly `GET /<route>`, `GET /<route>/:id`, `POST /<route>`, `PUT /<route>/:id` and `DELETE /<route>/:id`.

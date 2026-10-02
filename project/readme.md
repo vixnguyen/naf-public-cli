@@ -2,7 +2,7 @@
 A Node API application with TypeScript, MongoDB, Fastify and Swagger.
 
 ## Prerequisites
-- Nodejs
+- Nodejs 20.19 or later
 - MongoDB, running on `localhost`
 
 ## Build Setup

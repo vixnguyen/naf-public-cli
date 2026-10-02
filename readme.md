@@ -22,7 +22,7 @@ The CLI will ask you for a project name and a database name, then create the pro
 ## Development
 
 #### 1. Prerequisites
-- NodeJS
+- NodeJS 22.13 or later
 - MongoDB, running on `localhost`
 
 #### 2. Code generating

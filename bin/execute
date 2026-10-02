@@ -3,14 +3,14 @@
  * This is readonly file
  */
 const cmdAlias = 'naf';
-const inquirer = require('inquirer');
-const fs = require('fs');
-const fsExtra = require('fs-extra');
-const shell = require('shelljs');
-const chalk = require('chalk');
-const path = require('path');
+import inquirer from 'inquirer';
+import fs from 'fs';
+import fsExtra from 'fs-extra';
+import shell from 'shelljs';
+import chalk from 'chalk';
+import path from 'path';
 
-const projectInitDir = path.dirname(__dirname);
+const projectInitDir = path.dirname(import.meta.dirname);
 const projectDir = process.cwd();
 const srcDir = `${projectDir}/src/`;
 // template dir for crud action
@@ -18,7 +18,6 @@ const templateCrudDir = `${projectInitDir}/bin/templates/crud/`;
 // template dir for empty file
 const templateNewDir = `${projectInitDir}/bin/templates/new/`;
 const routeDir = `${srcDir}routes/`;
-var appDir = path.dirname(require.main.filename);
 
 // get from node process
 const actor = process.argv[2];
@@ -179,7 +178,7 @@ const CREATING_CONTROLLER_STEPS = [
  * @param fileName is name of file
  * @output new object it's contain a file metadata
  */
-newFileObj = (type, fileName) => {
+const newFileObj = (type, fileName) => {
   let folderOfType = `${type}s`;
   let objName = fileName;
   let folderDir = '';
@@ -208,7 +207,7 @@ newFileObj = (type, fileName) => {
 /**
  * Adding task to todolist if have controller
  */
-defineActions = (hasAction) => {
+const defineActions = (hasAction) => {
   if (dataForGenerating.controllerName) {
     let newFiles = {
       controller: newFileObj('controller', dataForGenerating.controllerName),
@@ -223,7 +222,7 @@ defineActions = (hasAction) => {
 /**
  * Config for new project generate
  */
-projectConfig = (options) => {
+const projectConfig = (options) => {
   // project generated
   const writePath = `${options.projectDir}/`;
   // project options template
@@ -255,7 +254,7 @@ projectConfig = (options) => {
  *    help: for help
  * }
  */
-generator = {
+const generator = {
   init: async () => {
     await inquirer.prompt(PROJECT_INIT_STEPS).then(async(answers) => {
       const projectName = answers['projectName'];
@@ -354,7 +353,7 @@ generator = {
 /**
  * Main duty
  */
-run = () => {
+const run = () => {
   if (generator[actor] && typeof generator[actor] === 'function') {
     generator[actor]();
   } else {
@@ -368,7 +367,7 @@ run = () => {
  * 1. Controller name
  * 2. A folder contained controller
  */
-analystController = (str) => {
+const analystController = (str) => {
   let hasFolder = false;
   let arr = str.split('/');
   let length = arr.length;
@@ -388,7 +387,7 @@ analystController = (str) => {
 /**
  * Process file
  */
-processFiles = () => {
+const processFiles = () => {
   let target = {};
   for (let key in todoList) {
     target = todoList[key];
@@ -402,7 +401,7 @@ processFiles = () => {
 /**
  * Display notifications after files created
  */
-processNotifications = () => {
+const processNotifications = () => {
   const typeMsgs = {
     added: `File(s) added:`
   };
@@ -423,7 +422,7 @@ processNotifications = () => {
  * @params target is file output metadata
  * @params isRoute check if the output file is route or not? to process another action
  */
-createDirectoryContents = (target, isRoute = false) => {
+const createDirectoryContents = (target, isRoute = false) => {
   if (!fs.existsSync(target['dir'])) {
     shell.mkdir('-p', target['dir']);
   }
@@ -500,20 +499,20 @@ createDirectoryContents = (target, isRoute = false) => {
  * Modify app route if the new route was created
  * @param name is name of  the new route, which just created
  */
-modifyAppRoute = (name) => {
+const modifyAppRoute = (name) => {
   const indexRoutes = `${routeDir}app.route.ts`;
   const routeName = `${kebabToCamel(name)}Route`;
   const routeFile = `${name}.route`;
   let fileContents = fs.readFileSync(`${indexRoutes}`, 'utf8');
-  regex = /(export default \[)(.|\n)*(\])/g;
+  const regex = /(export default \[)(.|\n)*(\])/g;
   // module.exports = []
-  checkModuleNull = /(export default \[)(\n)*(\])/g;
+  const checkModuleNull = /(export default \[)(\n)*(\])/g;
   // ...namefile, or ...namefile, // comment 
-  checkLastLine = /[a-zA-Z]+\,\s*[\sa-zA-Z\/\/]*\n\]/g;
+  const checkLastLine = /[a-zA-Z]+\,\s*[\sa-zA-Z\/\/]*\n\]/g;
   //...namefile // comment 
-  checkLastLineSpecialComma = /[a-zA-Z]+\s\/\/(\s?[a-z]+)?\n*\]/g;
-  checkBreakline = /\n*(?=(export default \[)(.|\n)*(\]))/g;
-  findModuleToInsertImport = /\n(?=\nexport default)/g;
+  const checkLastLineSpecialComma = /[a-zA-Z]+\s\/\/(\s?[a-z]+)?\n*\]/g;
+  const checkBreakline = /\n*(?=(export default \[)(.|\n)*(\]))/g;
+  const findModuleToInsertImport = /\n(?=\nexport default)/g;
 
   // app route has content & the new route contained in root route folder
   if (regex.test(fileContents) && !dataForGenerating.folderName) {
@@ -547,7 +546,7 @@ modifyAppRoute = (name) => {
  * @input abc-zyz
  * @output abcXyz
  */
-kebabToCamel = (string) => {
+const kebabToCamel = (string) => {
   return string = string.replace(/-([a-z])/g, (g) => {
     return g[1].toUpperCase(); 
   });
@@ -558,7 +557,7 @@ kebabToCamel = (string) => {
  * @input abc-zyz
  * @output AbcXyz
  */
-kebabToUpperCamel = (string) => {
+const kebabToUpperCamel = (string) => {
   string = string.replace(/-([a-z])/g, (g) => {
     return g[1].toUpperCase(); 
   });

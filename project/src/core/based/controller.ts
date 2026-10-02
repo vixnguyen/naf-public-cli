@@ -18,7 +18,7 @@ export class BaseController {
     const { model } = options
     
     // External Dependencies
-    const boom = require('boom')
+    const boom = require('@hapi/boom')
     // Get Data Models
     const dataModel = require(`@models/${model}.model`).default
     
@@ -72,7 +72,7 @@ export class BaseController {
         delete: async (req: any, reply: any) => {
           try {
             const id = req.params.id
-            const obj = await dataModel.findByIdAndRemove(id)
+            const obj = await dataModel.findByIdAndDelete(id)
             return obj
           } catch (err) {
             throw boom.boomify(err)

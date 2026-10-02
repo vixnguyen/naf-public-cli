@@ -1,17 +1,20 @@
 import 'module-alias/register';
+import { AddressInfo } from 'net';
 
 // Import Routes
 import routes from './routes/app.route'
 
 // Import Swagger Options
-import swaggerOptions  from './config/swagger'
+import swaggerOptions, { swaggerUiOptions } from './config/swagger'
 
 // Require the fastify framework and instantiate it
-const fastify = require('fastify')
+import Fastify from 'fastify'
 
-const app = fastify({
+const app = Fastify({
   logger: {
-    prettyPrint: true,
+    transport: {
+      target: 'pino-pretty'
+    },
     serializers: {
       req(req: any) {
         return {
@@ -27,13 +30,11 @@ const app = fastify({
   }
 })
 
-const fastifySwagger = require('fastify-swagger')
-
-// Register Swagger
-app.register(fastifySwagger, swaggerOptions)
+import fastifySwagger from '@fastify/swagger'
+import fastifySwaggerUi from '@fastify/swagger-ui'
 
 // Require external modules
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 
 // Import DB Config
 import dbConfig from './config/db'
@@ -43,17 +44,21 @@ mongoose.connect(`mongodb://${dbConfig.host}/${dbConfig.name}`)
   .then(() => console.log('MongoDB connected...'))
   .catch((err: any) => console.log(err))
 
-// Loop over each route
-routes.forEach((route: any, index: number) => {
-  app.route(route)
-})
-
 // Run the server!
 const start = async () => {
   try {
-    await app.listen(2101)
+    // Register Swagger before the routes so they are included in the documentation
+    await app.register(fastifySwagger, swaggerOptions)
+    await app.register(fastifySwaggerUi, swaggerUiOptions)
+
+    // Loop over each route
+    routes.forEach((route: any, index: number) => {
+      app.route(route)
+    })
+
+    await app.listen({ port: 2101 })
     app.swagger()
-    app.log.info(`server listening on ${app.server.address().port}`)
+    app.log.info(`server listening on ${(app.server.address() as AddressInfo).port}`)
   } catch (err) {
     app.log.error(err)
     process.exit(1)

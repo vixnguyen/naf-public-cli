@@ -1,23 +1,21 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "es2022",
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "sourceMap": true,
     "outDir": "dist",
-    "baseUrl": "./",
+    "rootDir": "src",
     "resolveJsonModule": true,
+    "types": ["node"],
     "paths": {
-      "*": [
-        "node_modules/*"
-      ],
-      "@core/*": ["src/core/*"],
-      "@controllers/*": ["src/controllers/*"],
-      "@models/*": ["src/models/*"],
-      "@routes/*": ["src/routes/*"],
-      "@schemas/*": ["src/schemas/*"]
+      "@core/*": ["./src/core/*"],
+      "@controllers/*": ["./src/controllers/*"],
+      "@models/*": ["./src/models/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@schemas/*": ["./src/schemas/*"]
     }
   },
   "include": ["src/**/*"],

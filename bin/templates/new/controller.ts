@@ -1,7 +1,8 @@
 /**
  * Import area
  * Example for the basic importing:
- * import yourModel from `@models/yourModelName.model
+ * import yourModel from '@models/yourModelName.model'
+ * import * as boom from '@hapi/boom'
  */
 
 export default {

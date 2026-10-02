@@ -61,3 +61,17 @@ To try your local changes to the CLI, link it globally from the root of this rep
 `npm link`
 
 The `naf` command now runs your working copy. Run `npm unlink -g @vixnguyen/naf` to go back to the published version.
+
+#### Smoke test
+
+`pnpm test` generates a project in a temporary folder, installs it with pnpm, type-checks it, starts the server and checks the generated routes. It needs [pnpm](https://pnpm.io/installation).
+
+To also check the CRUD actions against a database, set `MONGODB_URI`, for example:
+
+`MONGODB_URI=mongodb://127.0.0.1:27017/naf-smoke pnpm test`
+
+On Windows PowerShell:
+
+`$env:MONGODB_URI="mongodb://127.0.0.1:27017/naf-smoke"; pnpm test`
+
+The smoke test runs on Windows, macOS and Linux with Node 22 and 24 for every pull request. The CRUD actions are only checked on Linux, where Docker is available for MongoDB.

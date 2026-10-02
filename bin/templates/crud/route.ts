@@ -22,7 +22,8 @@ const { routes }: any = new BaseRoute({
  *    schema: `this is additional`
  *  }
  * ]
- * routes = [...route, ...newRoutes]
+ * and replace the export below with:
+ * export default [...routes, ...newRoutes]
  */
 
 export default routes

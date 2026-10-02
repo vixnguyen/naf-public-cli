@@ -1,8 +1,8 @@
 /**
  * Import area
  * Example for the basic importing:
- * import yourHandler from `@controllers/${yourControllerName}.controller`)
- * import yourDocumentation from `@schemas/${yourControllerName}.schema`) -> this is an additional
+ * import yourHandler from '@controllers/yourControllerName.controller'
+ * import yourDocumentation from '@schemas/yourControllerName.schema' -> this is an additional
  * const path = '/yourPath'
  */
 

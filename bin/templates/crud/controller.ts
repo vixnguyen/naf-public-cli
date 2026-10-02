@@ -13,16 +13,16 @@ const { actions }: any = new BaseController({
 /**
  * Adding new action here
  * For example:
- * actions.filterByName = (req, reply) => {
+ * actions.filterByName = async (req, reply) => {
  *  // todo
  * }
- * or
+ * or replace the export below with:
  * const newActions = {
- *  filterByName: (req, reply) => {
+ *  filterByName: async (req, reply) => {
  *    // todo
  *  }
  * }
- * { ...actions, ...newActions }
+ * export default { ...actions, ...newActions }
  */
 
 export default actions

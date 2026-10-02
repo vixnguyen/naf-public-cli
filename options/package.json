@@ -32,5 +32,10 @@
     "@models": "src/models",
     "@routes": "src/routes",
     "@schemas": "src/schemas"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

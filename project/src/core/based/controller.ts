@@ -21,7 +21,26 @@ export class BaseController {
     const boom = require('@hapi/boom')
     // Get Data Models
     const dataModel = require(`@models/${model}.model`).default
-    
+
+    // Map mongoose errors to client errors, everything else to a server error
+    const toBoom = (err: any) => {
+      if (err.isBoom) {
+        return err
+      }
+      if (err.name === 'CastError' || err.name === 'ValidationError') {
+        return boom.badRequest(err.message)
+      }
+      return boom.boomify(err)
+    }
+
+    // Throw a 404 when the document does not exist
+    const found = (obj: any) => {
+      if (!obj) {
+        throw boom.notFound(`${model} not found`)
+      }
+      return obj
+    }
+
     return {
       boom: boom,
       model: dataModel,
@@ -30,7 +49,7 @@ export class BaseController {
           try {
             return `${model} works!!!`
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         },
         index: async (req: any, reply: any) => {
@@ -38,44 +57,45 @@ export class BaseController {
             const data = await dataModel.find()
             return data
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         },
         create: async (req: any, reply: any) => {
           try {
             const newObj = new dataModel(req.body)
-            return newObj.save()
+            const savedObj = await newObj.save()
+            reply.code(201)
+            return savedObj
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         },
         read: async (req: any, reply: any) => {
           try {
             const id = req.params.id
             const obj = await dataModel.findById(id)
-            return obj
+            return found(obj)
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         },
         update: async (req: any, reply: any) => {
           try {
             const id = req.params.id
-            const obj = req.body
-            const { ...updateData } = obj
-            const updatedObj = await dataModel.findByIdAndUpdate(id, updateData, { new: true })
-            return updatedObj
+            const updateData = req.body
+            const updatedObj = await dataModel.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+            return found(updatedObj)
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         },
         delete: async (req: any, reply: any) => {
           try {
             const id = req.params.id
             const obj = await dataModel.findByIdAndDelete(id)
-            return obj
+            return found(obj)
           } catch (err) {
-            throw boom.boomify(err)
+            throw toBoom(err)
           }
         }
       }

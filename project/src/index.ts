@@ -30,6 +30,18 @@ const app = Fastify({
   }
 })
 
+// Send boom errors with their own status code, e.g. 400 or 404
+app.setErrorHandler((err: any, req, reply) => {
+  if (err.isBoom) {
+    if (err.output.statusCode >= 500) {
+      req.log.error(err)
+    }
+    reply.code(err.output.statusCode).send(err.output.payload)
+    return
+  }
+  reply.send(err)
+})
+
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 
@@ -39,10 +51,15 @@ import mongoose from 'mongoose'
 // Import DB Config
 import dbConfig from './config/db'
 
+// Server and database settings, can be overridden with environment variables
+const port = Number(process.env.PORT) || 2101
+const host = process.env.HOST || 'localhost'
+const mongoUri = process.env.MONGODB_URI || `mongodb://${dbConfig.host}/${dbConfig.name}`
+
 // Connect to DB
-mongoose.connect(`mongodb://${dbConfig.host}/${dbConfig.name}`)
-  .then(() => console.log('MongoDB connected...'))
-  .catch((err: any) => console.log(err))
+mongoose.connect(mongoUri)
+  .then(() => app.log.info('MongoDB connected...'))
+  .catch((err: any) => app.log.error(err))
 
 // Run the server!
 const start = async () => {
@@ -56,7 +73,7 @@ const start = async () => {
       app.route(route)
     })
 
-    await app.listen({ port: 2101 })
+    await app.listen({ port, host })
     app.swagger()
     app.log.info(`server listening on ${(app.server.address() as AddressInfo).port}`)
   } catch (err) {

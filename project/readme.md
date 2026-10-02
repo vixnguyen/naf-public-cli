@@ -30,6 +30,18 @@ The Swagger documentation is available at `localhost:2101/documentation`.
 
 The database settings are in `src/config/db.ts`.
 
+#### Type-check the project
+`npm run typecheck`
+
+#### Environment variables
+You can override the defaults without changing the code:
+
+Variable  | Default | Usage
+---       | ---     | ---
+`PORT`        | `2101` | Port of the server
+`HOST`        | `localhost` | Address the server listens on, use `0.0.0.0` to accept connections from other machines or containers
+`MONGODB_URI` | `mongodb://localhost/<database name>` | Full MongoDB connection string, for example a remote database
+
 ## Scripts
 You can use the `naf` command for code generating:
 

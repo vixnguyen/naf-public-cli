@@ -242,6 +242,10 @@ const projectConfig = (options) => {
     // create a new file with contents
     fs.writeFileSync(`${writePath}${fileName}`, contents, 'utf8');
   }
+  // npm does not publish .gitignore files, so the template keeps it as gitignore
+  if (fs.existsSync(`${writePath}gitignore`)) {
+    fs.renameSync(`${writePath}gitignore`, `${writePath}.gitignore`);
+  }
   console.log(chalk.cyan(`Project ${options.projectName} initialized!`));
 }
 

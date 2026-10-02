@@ -1,32 +1,62 @@
-// sampleSchema = {
-//   description: 'Create a new item',
-//   tags: ['data'],
-//   summary: 'Creates new item with given values',
-//   body: {
-//     type: 'object',
-//     properties: {
-//       name: { type: 'string' },
-//       description: { type: 'string' }
-//     }
-//   },
-//   response: {
-//     200: {
-//       description: 'Successful response',
-//       type: 'object',
-//       properties: {
-//         _id: { type: 'string' },
-//         name: { type: 'string' },
-//         description: { type: 'string' },
-//         __v: { type: 'number' }
-//       }
-//     }
-//   }
-// }
+/**
+ * Request schemas for the CRUD routes, also used for the Swagger documentation
+ * Keep the body properties in sync with the fields of your model
+ * Unknown body properties are removed before they reach the controller
+ *
+ * You can also document the responses, for example:
+ * response: {
+ *   200: {
+ *     type: 'object',
+ *     properties: {
+ *       _id: { type: 'string' },
+ *       name: { type: 'string' }
+ *     }
+ *   }
+ * }
+ * Note that fields missing from a response schema are removed from the response
+ */
+const tags = ['__MODEL__']
 
-// exports.__MODEL__Schema = {
-//   // adding schema here
-// }
+const body = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' }
+  },
+  additionalProperties: false
+}
+
+const params = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', pattern: '^[0-9a-fA-F]{24}$' }
+  },
+  required: ['id']
+}
 
 export default {
-  // adding schema here
+  index: {
+    tags,
+    summary: 'List all items'
+  },
+  read: {
+    tags,
+    summary: 'Get an item by id',
+    params
+  },
+  create: {
+    tags,
+    summary: 'Create a new item',
+    body: { ...body, required: ['name'] }
+  },
+  update: {
+    tags,
+    summary: 'Update an item by id',
+    params,
+    body
+  },
+  delete: {
+    tags,
+    summary: 'Delete an item by id',
+    params
+  }
 }

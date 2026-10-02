@@ -1,0 +1,43 @@
+name: Smoke test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install CLI dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Docker is only available on the Linux runners, the other runners skip the CRUD checks
+      - name: Start MongoDB
+        if: runner.os == 'Linux'
+        run: docker run -d --name mongodb -p 27017:27017 mongo
+
+      - name: Run smoke test
+        run: pnpm test
+        env:
+          MONGODB_URI: ${{ runner.os == 'Linux' && 'mongodb://127.0.0.1:27017/naf-smoke' || '' }}

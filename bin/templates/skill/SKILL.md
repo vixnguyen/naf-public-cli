@@ -7,11 +7,13 @@ Use the naf CLI from the project root instead of writing these files by hand. If
 
 - See what exists: `naf list --json`
 - New model with CRUD routes: `naf model <name> --fields "<fields>" --crud --json`
-- Several models at once (preferred): write `{"resources":[{"name":"post","fields":"title:string! author:ref(user)"}]}` to a file and run `naf plan <file> --json`. Nothing is generated if the plan has a mistake. Delete the file afterwards.
+- Several models at once (preferred): create `plan.json` with your file writing tool (not a shell heredoc), e.g. `{"resources":[{"name":"post","fields":"title:string! author:ref(user)"}]}`, run `naf plan plan.json --json`, then delete `plan.json`. Nothing is generated if the plan has a mistake.
 - Controller without a model: `naf controller <name or folder/name> --json`
+
+naf prints one JSON line and exits with code 1 on failure, so run it on its own, without `echo $?` or other commands.
 
 Fields: space separated `name:type`, type is `string`, `number`, `boolean`, `date` or `ref(<model>)`, `!` means required. Do not add `id`, it is automatic.
 Names: English, singular, kebab-case for models (`order-item`), camelCase for fields (`dueDate`), even when the user writes in another language. Routes are the plural of the model (`/order-items`, `/categories`), add `--route <route>` or `"route"` in the plan for another one.
 
 naf never overwrites files. To change an existing model, edit `src/models/<name>.model.ts` and the body in `src/schemas/<name>.schema.ts` by hand.
-After generating, run `npm run typecheck`, then tell the user in their language which routes now exist.
+After generating, run the `typecheck` script with the project's package manager (`pnpm typecheck` if there is a `pnpm-lock.yaml`, `yarn typecheck` for `yarn.lock`, otherwise `npm run typecheck`), then tell the user in their language which routes now exist.

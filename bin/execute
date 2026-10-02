@@ -64,8 +64,8 @@ let dataForGenerating = {
  * 2. Controller for controller and route name validation
  */
 const INQUIRER_REGEX = {
-  model: /^[a-z]+(-[a-z]+)*$/g,
-  controller: /^([a-z]+(-[a-z]+)*)+(\/([a-z]+(-[a-z]+)*))*$/g
+  model: /^[a-z]+(-[a-z]+)*$/,
+  controller: /^([a-z]+(-[a-z]+)*)+(\/([a-z]+(-[a-z]+)*))*$/
 };
 
 /**
@@ -185,6 +185,9 @@ newFileObj = (type, fileName) => {
   let folderDir = '';
   if (type === 'schema') {
     objName = kebabToCamel(fileName);
+  } else if (type === 'controller' && dataForGenerating.modelName) {
+    // crud controller must point to the chosen model, not to itself
+    objName = dataForGenerating.modelName;
   } else if (type === 'route') {
     // objName = dataForGenerating.routeName
   }
@@ -499,7 +502,7 @@ createDirectoryContents = (target, isRoute = false) => {
  */
 modifyAppRoute = (name) => {
   const indexRoutes = `${routeDir}app.route.ts`;
-  const routeName = `${name}Route`;
+  const routeName = `${kebabToCamel(name)}Route`;
   const routeFile = `${name}.route`;
   let fileContents = fs.readFileSync(`${indexRoutes}`, 'utf8');
   regex = /(export default \[)(.|\n)*(\])/g;

@@ -381,7 +381,7 @@ analystController = (str) => {
     // set controller name is last path of the input
     dataForGenerating.controllerName = arr[length - 1];
     // set folder name is remain of input excluded controller name
-    dataForGenerating.folderName = str.replace(`/${dataForGenerating.controllerName}`, '');
+    dataForGenerating.folderName = arr.slice(0, -1).join('/');
   }
 }
 

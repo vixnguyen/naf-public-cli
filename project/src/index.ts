@@ -55,7 +55,7 @@ const start = async () => {
     app.swagger()
     app.log.info(`server listening on ${app.server.address().port}`)
   } catch (err) {
-    fastify.log.error(err)
+    app.log.error(err)
     process.exit(1)
   }
 }

@@ -88,6 +88,19 @@ Other AI coding agents, such as Codex, Cursor, GitHub Copilot or Gemini CLI, rea
 
 After updating naf, run `naf skill` in your projects to update the skill. It also adds `AGENTS.md` when the project has none, and keeps an existing one. The skill works with projects created by naf 2.0 or later.
 
+##### Benchmark
+
+The same three prompts were run in Claude Code (Claude Opus 5.5), twice in a naf project and twice in the same TypeScript, Fastify, Mongoose and Swagger project without naf. The prompts created categories and products with CRUD, validation, filters, sorting and Swagger, then added a custom route and removed one. Every result passed the same 18 acceptance checks against MongoDB.
+
+| Three prompts in total | With naf | Without naf |
+|---|---|---|
+| Cost | $0.35 | $1.11 |
+| Output tokens | 3,760 | 23,050 |
+| Agent turns | 19.5 | 51.5 |
+| Time | 63 s | 258 s |
+
+Creating the resources was about 5× cheaper with naf, and the later changes about 1.5× cheaper. These are averages of two sessions each (October 2026), so take them as an indication rather than a guarantee.
+
 > Note that the generating script only support when you run it at the root folder of your project.
 
 #### 3. Run

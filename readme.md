@@ -25,6 +25,12 @@ The CLI will ask you for a project name and a database name, then create the pro
 - NodeJS 22.13 or later
 - MongoDB, running on `localhost`
 
+The generated project connects to `mongodb://localhost/<database name>`, using the database name you entered during `naf init`. To start a local MongoDB with Docker:
+
+`docker run -d --name mongodb -p 27017:27017 mongo`
+
+See the readme of the generated project for more options, such as Homebrew.
+
 #### 2. Code generating
 
 After a new project initialized, at the root folder of your project, you can generate controllers, routes, schemas and models with a simple command in the table below:

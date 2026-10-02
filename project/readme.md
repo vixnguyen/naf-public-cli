@@ -5,6 +5,21 @@ A Node API application with TypeScript, MongoDB, Fastify and Swagger.
 - Nodejs 20.19 or later
 - MongoDB, running on `localhost`
 
+## MongoDB
+The app connects to `mongodb://localhost/<database name>` on the default port `27017`. The host and database name are set in `src/config/db.ts`, and the database name is the one you entered during `naf init`. MongoDB creates the database the first time data is saved, so you don't need to create it yourself.
+
+Start a local MongoDB with one of these:
+
+> With Docker:
+`docker run -d --name mongodb -p 27017:27017 mongo`
+
+> With Homebrew on macOS:
+`brew tap mongodb/brew`, then `brew install mongodb-community` and `brew services start mongodb-community`
+
+For other platforms, see the [MongoDB installation guide](https://www.mongodb.com/docs/manual/installation/).
+
+If MongoDB is not running, the server still starts, and `/` and the `/test` routes still respond. Routes that read or write data fail after about 10 seconds, and the connection error is printed in the console.
+
 ## Build Setup
 
 #### Install dependencies

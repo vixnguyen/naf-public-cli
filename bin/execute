@@ -504,6 +504,9 @@ const modifyAppRoute = (name) => {
   const routeName = `${kebabToCamel(name)}Route`;
   const routeFile = `${name}.route`;
   let fileContents = fs.readFileSync(`${indexRoutes}`, 'utf8');
+  // work with LF line endings so the regexes also match files checked out with CRLF (Windows)
+  const eol = fileContents.includes('\r\n') ? '\r\n' : '\n';
+  fileContents = fileContents.replace(/\r\n/g, '\n');
   const regex = /(export default \[)(.|\n)*(\])/g;
   // module.exports = []
   const checkModuleNull = /(export default \[)(\n)*(\])/g;
@@ -533,8 +536,8 @@ const modifyAppRoute = (name) => {
     fileContents = fileContents.replace(checkBreakline, '\n');
     // requiring new route before module export
     fileContents = fileContents.replace(findModuleToInsertImport, `\nimport ${routeName} from './${routeFile}'\n`);
-    // apply new content to the app route
-    fs.writeFileSync(`${indexRoutes}`, fileContents, 'utf8');
+    // apply new content to the app route, keeping its original line endings
+    fs.writeFileSync(`${indexRoutes}`, fileContents.replace(/\n/g, eol), 'utf8');
     return `${indexRoutes}`;
   } else {
     return false;

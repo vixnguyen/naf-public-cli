@@ -29,7 +29,7 @@ The generated project connects to `mongodb://localhost/<database name>`, using t
 
 `docker run -d --name mongodb -p 27017:27017 mongo`
 
-See the readme of the generated project for more options, such as Homebrew.
+Or install MongoDB Community Server with the [official installer](https://www.mongodb.com/try/download/community) for Windows, macOS or Linux. The readme of the generated project has more details.
 
 #### 2. Code generating
 

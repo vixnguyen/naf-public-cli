@@ -9,6 +9,7 @@ import fsExtra from 'fs-extra';
 import shell from 'shelljs';
 import chalk from 'chalk';
 import path from 'path';
+import { parseArgs } from 'util';
 
 const projectInitDir = path.dirname(import.meta.dirname);
 const projectDir = process.cwd();
@@ -17,10 +18,147 @@ const srcDir = `${projectDir}/src/`;
 const templateCrudDir = `${projectInitDir}/bin/templates/crud/`;
 // template dir for empty file
 const templateNewDir = `${projectInitDir}/bin/templates/new/`;
+// Claude Code skill installed in the projects
+const templateSkillPath = `${projectInitDir}/bin/templates/skill/SKILL.md`;
+const skillPath = '.claude/skills/naf/SKILL.md';
+// instructions for other AI coding agents, which read AGENTS.md
+const templateAgentsPath = `${projectInitDir}/bin/templates/skill/AGENTS.md`;
+const agentsPath = 'AGENTS.md';
 const routeDir = `${srcDir}routes/`;
 
 // get from node process
 const actor = process.argv[2];
+
+/**
+ * Options for running the commands without prompts, e.g. naf model post --fields "title:string!" --crud
+ * The positionals are the names, e.g. the model name
+ */
+let options = {};
+let positionals = [];
+let argsError = '';
+try {
+  ({ values: options, positionals } = parseArgs({
+    args: process.argv.slice(3),
+    allowPositionals: true,
+    options: {
+      fields: { type: 'string' },
+      crud: { type: 'boolean' },
+      route: { type: 'string' },
+      model: { type: 'string' },
+      db: { type: 'string' },
+      json: { type: 'boolean' }
+    }
+  }));
+} catch (err) {
+  argsError = err.message;
+  // keep the JSON output for the error
+  options = { json: process.argv.includes('--json') };
+}
+
+/**
+ * Fields of a model, e.g. "title:string! body:string author:ref(user)"
+ * Types: string, number, boolean, date, ref(<model>). A trailing ! means required
+ */
+const DEFAULT_FIELDS = 'name:string!';
+const FIELD_REGEX = /^([a-z][a-zA-Z0-9]*):(string|number|boolean|date|ref\(([a-z]+(?:-[a-z]+)*)\))(!?)$/;
+const RESERVED_FIELDS = ['id', '_id', '__v', 'sort'];
+// names mongoose reserves for its documents, a field with one of them may break the model
+const MONGOOSE_RESERVED = ['collection', 'emit', 'errors', 'get', 'init', 'isModified', 'isNew', 'listeners', 'populated', 'prototype', 'remove', 'removeListener', 'save', 'toObject', 'validate'];
+
+/**
+ * Parse the fields text
+ * @output { fields, error } fields is a list of { name, type, ref, required }
+ */
+const parseFields = (text) => {
+  const fields = [];
+  if (typeof text !== 'string') {
+    return { fields, error: 'Fields must be text such as "title:string! price:number"' };
+  }
+  const tokens = text.split(/[\s,]+/).filter(Boolean);
+  if (!tokens.length) {
+    return { fields, error: 'At least one field is required, e.g. "title:string!"' };
+  }
+  for (const token of tokens) {
+    const match = FIELD_REGEX.exec(token);
+    if (!match) {
+      return { fields, error: `Invalid field "${token}", use name:type with type string, number, boolean, date or ref(<model>), and ! for required` };
+    }
+    const [, name, type, ref, required] = match;
+    if (name === 'sort') {
+      return { fields, error: '"sort" is used to sort the list, choose another field name' };
+    }
+    if (RESERVED_FIELDS.includes(name)) {
+      return { fields, error: `"${name}" is added automatically, remove it from the fields` };
+    }
+    if (MONGOOSE_RESERVED.includes(name)) {
+      return { fields, error: `"${name}" is reserved by mongoose, choose another field name` };
+    }
+    if (fields.some((field) => field.name === name)) {
+      return { fields, error: `Field "${name}" is defined twice` };
+    }
+    fields.push({ name, type: ref ? 'ref' : type, ref, required: required === '!' });
+  }
+  return { fields, error: '' };
+};
+
+const MONGOOSE_TYPES = { string: 'String', number: 'Number', boolean: 'Boolean', date: 'Date' };
+// request bodies accept null to clear a field, a required field still rejects it
+const SCHEMA_TYPES = {
+  string: `{ type: 'string', nullable: true }`,
+  number: `{ type: 'number', nullable: true }`,
+  boolean: `{ type: 'boolean', nullable: true }`,
+  date: `{ type: 'string', format: 'date-time', nullable: true }`,
+  ref: `{ type: 'string', pattern: '^[0-9a-fA-F]{24}$', nullable: true }`
+};
+
+// query string filters, a number is checked as text so that e.g. " " is not read as 0
+const QUERY_TYPES = {
+  string: `{ type: 'string' }`,
+  number: `{ type: 'string', pattern: '^-?\\\\d+(\\\\.\\\\d+)?$', description: 'number' }`,
+  boolean: `{ type: 'boolean' }`,
+  date: `{ type: 'string', format: 'date-time' }`,
+  ref: `{ type: 'string', pattern: '^[0-9a-fA-F]{24}$' }`
+};
+
+// fields of the mongoose model
+const renderModelFields = (fields) => fields.map((field) => {
+  const required = field.required ? ', required: true' : '';
+  if (field.type === 'ref') {
+    return `${field.name}: { type: mongoose.Schema.Types.ObjectId, ref: '${field.ref}'${required} }`;
+  }
+  return field.required ? `${field.name}: { type: ${MONGOOSE_TYPES[field.type]}${required} }` : `${field.name}: ${MONGOOSE_TYPES[field.type]}`;
+}).join(',\n  ');
+
+// body properties of the request schema
+const renderSchemaProperties = (fields) => fields.map((field) => `${field.name}: ${SCHEMA_TYPES[field.type]}`).join(',\n    ');
+
+// filters of the list
+const renderQueryProperties = (fields) => fields.map((field) => `${field.name}: ${QUERY_TYPES[field.type]}`).join(',\n    ');
+
+const renderRequired = (fields) => `[${fields.filter((field) => field.required).map((field) => `'${field.name}'`).join(', ')}]`;
+
+// models which already exist in the project
+const existingModels = () => {
+  const dir = `${srcDir}models`;
+  return fs.existsSync(dir) ? fs.readdirSync(dir).filter((file) => file.endsWith('.model.ts')).map((file) => file.replace(/\.model\.ts$/, '')) : [];
+};
+
+// a ref must point to an existing model or a model created in the same command
+const checkRefs = (fields, knownModels) => {
+  const unknown = fields.find((field) => field.type === 'ref' && !knownModels.includes(field.ref));
+  return unknown ? `Field "${unknown.name}" links to unknown model "${unknown.ref}", create it first or in the same plan` : '';
+};
+
+// default route of a model, e.g. post -> posts, category -> categories, box -> boxes
+const pluralize = (name) => {
+  if (/[^aeiou]y$/.test(name)) {
+    return `${name.slice(0, -1)}ies`;
+  }
+  return /(s|x|z|ch|sh)$/.test(name) ? `${name}es` : `${name}s`;
+};
+
+// the commands which change a project must run at its root folder
+const isProjectRoot = () => fs.existsSync(`${routeDir}app.route.ts`);
 
 /**
  * Store metadata for files creating
@@ -41,7 +179,8 @@ let todoList = {
 let notifications = {
   added: [],
   failed: [],
-  modified: []
+  modified: [],
+  notes: []
 };
 
 /**
@@ -55,6 +194,18 @@ let dataForGenerating = {
   url: '',
   folderName: '',
   hasCustom: false
+};
+
+// fields of the generated model and request schema
+let fieldsForGenerating = parseFields(DEFAULT_FIELDS).fields;
+
+/**
+ * Reset what was prepared for the previous resource, to generate several resources in one run
+ */
+const resetGenerating = () => {
+  todoList = { controller: null, model: null, route: null, schema: null };
+  dataForGenerating = { controllerName: '', modelName: '', routeName: '', url: '', folderName: '', hasCustom: false };
+  fieldsForGenerating = parseFields(DEFAULT_FIELDS).fields;
 };
 
 /**
@@ -98,12 +249,21 @@ const INQUIRER_STEPS = {
       }
     }
   },
+  fields: {
+    name: 'fields',
+    type: 'input',
+    message: 'Enter fields (e.g. title:string! price:number author:ref(user)):',
+    default: DEFAULT_FIELDS,
+    validate: function (input) {
+      return parseFields(input).error || true;
+    }
+  },
   route: (name) => {
     return {
       name: 'name',
       type: 'input',
       message: 'Enter Route name:',
-      default: `${name}s`,
+      default: pluralize(name),
       validate: function (input) {
         if (INQUIRER_REGEX.controller.test(input)) {
           return true;
@@ -156,6 +316,7 @@ const PROJECT_INIT_STEPS = [
  */
 const CREATING_MODEL_STEPS = [
   INQUIRER_STEPS.model,
+  INQUIRER_STEPS.fields,
   {
     name: 'hasAction',
     type: 'confirm',
@@ -216,7 +377,27 @@ const defineActions = (hasAction) => {
     };
     todoList = { ...todoList, ...newFiles };
   }
+}
+
+// prepared files which already exist, e.g. src/routes/app.route.ts for a model named app
+const existingTargets = () => Object.values(todoList)
+  .filter(Boolean)
+  .map((target) => `${target['dir']}/${target['fileName']}`)
+  .filter((file) => fs.existsSync(file))
+  .map((file) => relative(file));
+
+/**
+ * Generate the prepared files, or nothing when one of them already exists
+ * @output true when the files were generated
+ */
+const generateFiles = () => {
+  const existing = existingTargets();
+  if (existing.length) {
+    fail(`Nothing was generated, already exists: ${existing.join(', ')}`);
+    return false;
+  }
   processFiles();
+  return true;
 }
 
 /**
@@ -246,122 +427,394 @@ const projectConfig = (options) => {
   if (fs.existsSync(`${writePath}gitignore`)) {
     fs.renameSync(`${writePath}gitignore`, `${writePath}.gitignore`);
   }
-  console.log(chalk.cyan(`Project ${options.projectName} initialized!`));
 }
 
 /**
+ * Print an error and exit with code 1
+ */
+const fail = (message) => {
+  if (options.json) {
+    console.log(JSON.stringify({ error: message }));
+  } else {
+    console.log(chalk.red(message));
+  }
+  process.exitCode = 1;
+};
+
+// the prompts only work in a terminal, otherwise the names must be passed as arguments
+// NAF_FORCE_PROMPTS=1 lets the smoke test answer the prompts through a pipe
+const canPrompt = () => (Boolean(process.stdin.isTTY && process.stdout.isTTY) || process.env.NAF_FORCE_PROMPTS === '1') && !options.json;
+
+// paths in the output are relative to the folder naf runs in
+const relative = (file) => path.relative(projectDir, file).split(path.sep).join('/');
+
+const notProjectRoot = () => fail(`Run '${cmdAlias} ${actor}' at the root folder of a Naf project`);
+
+/**
+ * Check the name, route and fields of a new model
+ * @param knownModels models a ref may point to
+ * @output { fields, error }
+ */
+const checkModel = ({ name, fieldsText, route, crud }, knownModels) => {
+  if (!INQUIRER_REGEX.model.test(name)) {
+    return { fields: [], error: `Invalid model name "${name}", use lower letters in kebab-case, e.g. order-item` };
+  }
+  if (existingModels().includes(name)) {
+    return { fields: [], error: `Model "${name}" already exists` };
+  }
+  if (route && !crud) {
+    return { fields: [], error: 'A route needs CRUD actions, add --crud' };
+  }
+  if (route && !INQUIRER_REGEX.controller.test(route)) {
+    return { fields: [], error: `Invalid route "${route}", use an alias or a relative path in kebab-case` };
+  }
+  const { fields, error } = parseFields(fieldsText === undefined ? DEFAULT_FIELDS : fieldsText);
+  return { fields, error: error || checkRefs(fields, knownModels) };
+};
+
+/**
+ * Prepare the files of a new model, and of its CRUD controller, route and schema when crud is set
+ */
+const prepareModel = ({ name, fields, crud, route }) => {
+  // define data to create model file
+  todoList.model = newFileObj('model', name);
+  fieldsForGenerating = fields;
+  if (crud) {
+    const routeName = route || pluralize(name);
+    dataForGenerating.hasCustom = routeName !== `${name}s`;
+    // define data to create controller file
+    dataForGenerating.controllerName = name;
+    // define data to create route file
+    dataForGenerating.routeName = dataForGenerating.hasCustom ? routeName : name;
+    // define data to create schema file
+    dataForGenerating.schemaName = name;
+  }
+};
+
+/**
+ * Prepare the files of a controller, with CRUD actions when a model is set
+ */
+const prepareController = () => {
+  if (dataForGenerating.modelName) {
+    // template is crud template
+    dataForGenerating.templateDir = templateCrudDir;
+    // an existing model is used as it is
+    if (!existingModels().includes(dataForGenerating.modelName)) {
+      todoList.model = newFileObj('model', dataForGenerating.modelName);
+    }
+  } else {
+    // template is empty template
+    dataForGenerating.templateDir = templateNewDir;
+  }
+};
+
+/**
+ * Copy the Claude Code skill into a project, and AGENTS.md when the project has none
+ * An existing AGENTS.md is kept, it may contain the user's own instructions
+ * @output { updated: true if the skill was already installed, agents: 'added' or 'kept' }
+ */
+const installSkill = (dir) => {
+  const target = path.join(dir, skillPath);
+  const updated = fs.existsSync(target);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(templateSkillPath, target);
+  const agentsTarget = path.join(dir, agentsPath);
+  const agents = fs.existsSync(agentsTarget) ? 'kept' : 'added';
+  if (agents === 'added') {
+    fs.copyFileSync(templateAgentsPath, agentsTarget);
+  }
+  return { updated, agents };
+};
+
+/**
+ * Create a new project
+ */
+const createProject = (projectName, dbName) => {
+  // create new dir by project name
+  const newProjectDir = `${projectDir}/${projectName}`;
+  if (fs.existsSync(newProjectDir)) {
+    return fail(`${relative(newProjectDir)} already exists!`);
+  }
+  shell.mkdir('-p', newProjectDir);
+  // copy source code to new project dir
+  fsExtra.copySync(`${projectInitDir}/project/`, `${newProjectDir}/`);
+  // change project metadata by config
+  projectConfig({ projectName, dbName, projectDir: newProjectDir });
+  installSkill(newProjectDir);
+  if (options.json) {
+    console.log(JSON.stringify({ project: projectName, dir: relative(newProjectDir) }));
+  } else {
+    console.log(chalk.cyan(`Project ${projectName} initialized!`));
+  }
+};
+
+// files of a type in a folder and its sub folders, e.g. admin/report for admin/report.controller.ts
+const listFiles = (dir, suffix, prefix = '') => {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory()) {
+      return listFiles(path.join(dir, entry.name), suffix, `${prefix}${entry.name}/`);
+    }
+    return entry.name.endsWith(suffix) ? [`${prefix}${entry.name.slice(0, -suffix.length)}`] : [];
+  });
+};
+
+/**
  * Define bash script
+ * Every command runs with prompts in a terminal, or without prompts when its name is given as an argument
  * @options 
  * {
+ *    init: for creating a new project,
  *    model: for creating model and the advance options allowing create CRUD actions, controler, schema, route too,
  *    controller: for creating contoller and the advance options allowing create CRUD actions for a specific model,
+ *    plan: for creating several models with CRUD actions from a JSON file,
+ *    list: for listing the models and controllers,
+ *    skill: for adding the Claude Code skill to a project,
  *    help: for help
  * }
  */
 const generator = {
   init: async () => {
-    await inquirer.prompt(PROJECT_INIT_STEPS).then(async(answers) => {
-      const projectName = answers['projectName'];
-      const dbName = answers['dbName'];
-      // create new dir by project name
-      const newProjectDir = `${projectDir}/${projectName}`;
-      if (!fs.existsSync(newProjectDir)) {
-        shell.mkdir('-p', newProjectDir);
-        // copy source code to new project dir
-        fsExtra.copy(`${projectInitDir}/project/`, `${newProjectDir}/`, err =>{
-          if(err) return console.error(err);
-          // if success change project metadata by config
-          projectConfig({
-            projectName: projectName,
-            dbName: dbName,
-            projectDir: newProjectDir
-          });
-        });
-      } else {
-        console.log(chalk.red(`${newProjectDir} already exists!`));
-      }   
-    });
+    const [projectName] = positionals;
+    if (projectName) {
+      if (/[\\/]/.test(projectName)) {
+        return fail(`Invalid project name "${projectName}", use a folder name without slashes`);
+      }
+      return createProject(projectName, options.db || projectName);
+    }
+    if (!canPrompt()) {
+      return fail(`Usage: ${cmdAlias} init <project name> [--db <database name>]`);
+    }
+    const answers = await inquirer.prompt(PROJECT_INIT_STEPS);
+    createProject(answers['projectName'], answers['dbName']);
   },
   model: async () => {
-    await inquirer.prompt(CREATING_MODEL_STEPS).then(async(model) => {
-      const modelName = model['name'];
-      // define data to create model file
-      todoList.model = newFileObj('model', modelName);
-      if (model['hasAction']) {
-        const QUESTIONS = [
-          // require enter route name
-          INQUIRER_STEPS.route(modelName)
-        ];
-        await inquirer.prompt(QUESTIONS).then((route) => {
-          dataForGenerating.hasCustom = route['name'] !== `${modelName}s`;
-          // define data to create controller file
-          dataForGenerating.controllerName = modelName;
-          // define data to create route file
-          dataForGenerating.routeName = dataForGenerating.hasCustom ? route['name'] : modelName;
-          // define data to create schema file
-          dataForGenerating.schemaName = modelName;
-        });
+    if (!isProjectRoot()) {
+      return notProjectRoot();
+    }
+    const [name] = positionals;
+    if (name) {
+      const { fields, error } = checkModel({ name, fieldsText: options.fields, route: options.route, crud: options.crud }, [...existingModels(), name]);
+      if (error) {
+        return fail(error);
       }
+      prepareModel({ name, fields, crud: options.crud, route: options.route });
       defineActions();
-    });
+      return generateFiles() && report();
+    }
+    if (!canPrompt()) {
+      return fail(`Usage: ${cmdAlias} model <name> [--fields "<field>:<type>[!] ..."] [--crud] [--route <route>]`);
+    }
+    const model = await inquirer.prompt(CREATING_MODEL_STEPS);
+    const modelName = model['name'];
+    const { fields, error } = checkModel({ name: modelName, fieldsText: model['fields'] }, [...existingModels(), modelName]);
+    if (error) {
+      return fail(error);
+    }
+    let route = '';
+    if (model['hasAction']) {
+      // require enter route name
+      route = (await inquirer.prompt([INQUIRER_STEPS.route(modelName)]))['name'];
+    }
+    prepareModel({ name: modelName, fields, crud: model['hasAction'], route });
+    defineActions();
+    generateFiles() && report();
   },
   controller: async () => {
-    await inquirer.prompt(CREATING_CONTROLLER_STEPS).then(async(controller) => {
-      const controllerName = controller['name'];
-      analystController(controllerName);
-      /**
-       * Steps for creating route
-       * @steps
-       * 1. Require enter route name, default value is recommended
-       * 2. Ask for creating CRUD actions for specific model
-       */
-      const QUESTIONS = [
-        INQUIRER_STEPS.route(controllerName),
-        {
-          name: 'hasAction',
-          type: 'confirm',
-          message: 'Initing CRUD actions?',
-          default: false
-        }
-      ];
-      await inquirer.prompt(QUESTIONS).then(async(route) => {
-        dataForGenerating.hasCustom = route['name'] !== `${controllerName}s`;
-        dataForGenerating.routeName = route['name'];
-        // if CRUD actions are choosed
-        if (route['hasAction']) {
-          // Require enter model name
-          await inquirer.prompt(INQUIRER_STEPS.model).then(async(model) => {
-            dataForGenerating.modelName = model['name'];
-          });
-        }
-      });
-    });
-    // if CRUD actions are choosed
-    if (dataForGenerating.modelName) {
-      // template is crud template
-      dataForGenerating.templateDir = templateCrudDir;
-      todoList.model = newFileObj('model', dataForGenerating.modelName);
-    } else {
-      // template is empty template
-      dataForGenerating.templateDir = templateNewDir;
+    if (!isProjectRoot()) {
+      return notProjectRoot();
     }
+    const [controllerName] = positionals;
+    if (controllerName) {
+      if (!INQUIRER_REGEX.controller.test(controllerName)) {
+        return fail(`Invalid controller "${controllerName}", use an alias or a relative path in kebab-case`);
+      }
+      if (options.route && !INQUIRER_REGEX.controller.test(options.route)) {
+        return fail(`Invalid route "${options.route}", use an alias or a relative path in kebab-case`);
+      }
+      if (options.fields && !options.model) {
+        return fail('Fields need a model, add --model <name>');
+      }
+      analystController(controllerName);
+      dataForGenerating.routeName = options.route || pluralize(controllerName);
+      dataForGenerating.hasCustom = dataForGenerating.routeName !== `${controllerName}s`;
+      if (options.model) {
+        if (!INQUIRER_REGEX.model.test(options.model)) {
+          return fail(`Invalid model name "${options.model}", use lower letters in kebab-case, e.g. order-item`);
+        }
+        const { fields, error } = parseFields(options.fields === undefined ? DEFAULT_FIELDS : options.fields);
+        const refError = error || checkRefs(fields, [...existingModels(), options.model]);
+        if (refError) {
+          return fail(refError);
+        }
+        dataForGenerating.modelName = options.model;
+        fieldsForGenerating = fields;
+      }
+      prepareController();
+      defineActions();
+      return generateFiles() && report();
+    }
+    if (!canPrompt()) {
+      return fail(`Usage: ${cmdAlias} controller <name or path> [--route <route>] [--model <name> [--fields "<field>:<type>[!] ..."]]`);
+    }
+    const controller = await inquirer.prompt(CREATING_CONTROLLER_STEPS);
+    const name = controller['name'];
+    analystController(name);
+    /**
+     * Steps for creating route
+     * @steps
+     * 1. Require enter route name, default value is recommended
+     * 2. Ask for creating CRUD actions for specific model
+     */
+    const route = await inquirer.prompt([
+      INQUIRER_STEPS.route(name),
+      {
+        name: 'hasAction',
+        type: 'confirm',
+        message: 'Initing CRUD actions?',
+        default: false
+      }
+    ]);
+    dataForGenerating.hasCustom = route['name'] !== `${name}s`;
+    dataForGenerating.routeName = route['name'];
+    // if CRUD actions are choosed
+    if (route['hasAction']) {
+      // Require enter model name and its fields
+      const model = await inquirer.prompt([INQUIRER_STEPS.model, INQUIRER_STEPS.fields]);
+      const { fields } = parseFields(model['fields']);
+      const refError = checkRefs(fields, [...existingModels(), model['name']]);
+      if (refError) {
+        return fail(refError);
+      }
+      dataForGenerating.modelName = model['name'];
+      fieldsForGenerating = fields;
+    }
+    prepareController();
     defineActions();
+    generateFiles() && report();
+  },
+  plan: async () => {
+    if (!isProjectRoot()) {
+      return notProjectRoot();
+    }
+    const [file] = positionals;
+    if (!file) {
+      return fail(`Usage: ${cmdAlias} plan <plan.json | -> with {"resources":[{"name":"post","fields":"title:string! body:string"}]}`);
+    }
+    let plan;
+    try {
+      plan = JSON.parse(fs.readFileSync(file === '-' ? 0 : file, 'utf8'));
+    } catch (err) {
+      return fail(`Cannot read the plan: ${err.message}`);
+    }
+    const resources = Array.isArray(plan) ? plan : plan?.resources;
+    if (!Array.isArray(resources) || !resources.length) {
+      return fail('The plan must look like {"resources":[{"name":"post","fields":"title:string!"}]}');
+    }
+    // check everything first, so nothing is generated when the plan has a mistake
+    const names = resources.map((resource) => resource?.name);
+    const knownModels = [...existingModels(), ...names];
+    const errors = [];
+    const prepared = resources.map((resource, i) => {
+      const label = typeof resource?.name === 'string' ? resource.name : `resource ${i + 1}`;
+      if (typeof resource?.name !== 'string') {
+        errors.push(`${label}: name is required`);
+        return null;
+      }
+      if (names.indexOf(resource.name) !== i) {
+        errors.push(`${label}: defined twice`);
+      }
+      const crud = resource.crud !== false;
+      const fieldsText = Array.isArray(resource.fields) && resource.fields.every((field) => typeof field === 'string') ? resource.fields.join(' ') : resource.fields;
+      if (fieldsText !== undefined && typeof fieldsText !== 'string') {
+        errors.push(`${label}: fields must be text such as "title:string! price:number" or a list of such fields`);
+        return null;
+      }
+      const { fields, error } = checkModel({ name: resource.name, fieldsText, route: resource.route, crud }, knownModels);
+      if (error) {
+        errors.push(`${label}: ${error}`);
+      }
+      return { name: resource.name, fields, crud, route: resource.route };
+    });
+    // a file of a resource may already exist, e.g. the route of a model named app
+    if (!errors.length) {
+      for (const resource of prepared) {
+        resetGenerating();
+        prepareModel(resource);
+        defineActions();
+        const existing = existingTargets();
+        if (existing.length) {
+          errors.push(`${resource.name}: already exists: ${existing.join(', ')}`);
+        }
+      }
+    }
+    if (errors.length) {
+      return fail(`Nothing was generated:\n${errors.join('\n')}`);
+    }
+    for (const resource of prepared) {
+      resetGenerating();
+      prepareModel(resource);
+      defineActions();
+      processFiles();
+    }
+    report();
+  },
+  list: () => {
+    if (!isProjectRoot()) {
+      return notProjectRoot();
+    }
+    const result = { models: existingModels(), controllers: listFiles(`${srcDir}controllers`, '.controller.ts') };
+    if (options.json) {
+      return console.log(JSON.stringify(result));
+    }
+    console.log(chalk.cyan('Models:'), result.models.join(', ') || '-');
+    console.log(chalk.cyan('Controllers:'), result.controllers.join(', ') || '-');
+  },
+  skill: () => {
+    if (!isProjectRoot()) {
+      return notProjectRoot();
+    }
+    const { updated, agents } = installSkill(projectDir);
+    if (options.json) {
+      return console.log(JSON.stringify({ skill: skillPath, updated, agents }));
+    }
+    console.log(chalk.cyan(`Claude Code skill ${updated ? 'updated' : 'added'}: ${skillPath}`));
+    console.log(chalk.cyan(agents === 'added' ? `Instructions for other AI coding agents added: ${agentsPath}` : `${agentsPath} already exists and was kept`));
   },
   help: () => {
-    console.log(chalk.yellow(`'${cmdAlias} init' to init a new project`));
-    console.log(chalk.yellow(`'${cmdAlias} model' to create model`));
-    console.log(chalk.yellow(`'${cmdAlias} controller' to create controller`));
+    console.log(chalk.yellow(`'${cmdAlias} init [name] [--db <name>]' to init a new project`));
+    console.log(chalk.yellow(`'${cmdAlias} model [name] [--fields "title:string! price:number author:ref(user)"] [--crud] [--route <route>]' to create model`));
+    console.log(chalk.yellow(`'${cmdAlias} controller [name] [--route <route>] [--model <name> [--fields "..."]]' to create controller`));
+    console.log(chalk.yellow(`'${cmdAlias} plan <plan.json | ->' to create several models with CRUD actions`));
+    console.log(chalk.yellow(`'${cmdAlias} list' to list the models and controllers`));
+    console.log(chalk.yellow(`'${cmdAlias} skill' to add or update the Claude Code skill and AGENTS.md of a project`));
+    console.log(chalk.yellow(`Without a name, the command asks for it. Add --json for a JSON output.`));
   }
 }
 
 /**
  * Main duty
  */
-const run = () => {
+// number of names each command takes, e.g. naf model <name>
+const MAX_POSITIONALS = { init: 1, model: 1, controller: 1, plan: 1, list: 0, skill: 0, help: 0 };
+
+const run = async () => {
+  if (argsError) {
+    return fail(argsError);
+  }
+  if (actor in MAX_POSITIONALS && positionals.length > MAX_POSITIONALS[actor]) {
+    return fail(`Unexpected argument "${positionals[MAX_POSITIONALS[actor]]}", see '${cmdAlias} help'`);
+  }
   if (generator[actor] && typeof generator[actor] === 'function') {
-    generator[actor]();
+    try {
+      await generator[actor]();
+    } catch (err) {
+      fail(err.message);
+    }
   } else {
-    console.log(chalk.red(`The specified command ${actor} is invalid. For available options, see '${cmdAlias} help'.`));
+    fail(`The specified command ${actor} is invalid. For available options, see '${cmdAlias} help'.`);
   }
 }
 
@@ -399,7 +852,44 @@ const processFiles = () => {
       createDirectoryContents(target, key === 'route');
     }
   }
-  processNotifications();
+}
+
+// command to type-check the project, based on the lock file of its package manager
+const typecheckCommand = () => {
+  if (fs.existsSync(`${projectDir}/pnpm-lock.yaml`)) {
+    return 'pnpm typecheck';
+  }
+  if (fs.existsSync(`${projectDir}/yarn.lock`)) {
+    return 'yarn typecheck';
+  }
+  if (fs.existsSync(`${projectDir}/bun.lock`) || fs.existsSync(`${projectDir}/bun.lockb`)) {
+    return 'bun run typecheck';
+  }
+  return 'npm run typecheck';
+};
+
+/**
+ * Print what was generated, as JSON with --json
+ */
+const report = () => {
+  const typecheck = notifications.added.length ? typecheckCommand() : undefined;
+  if (options.json) {
+    console.log(JSON.stringify({
+      added: notifications.added.map((obj) => obj.name),
+      modified: notifications.modified.map((obj) => obj.name),
+      failed: notifications.failed.map((obj) => obj.msg),
+      notes: notifications.notes.map((obj) => obj.msg),
+      typecheck
+    }));
+  } else {
+    processNotifications();
+    if (typecheck) {
+      console.log(chalk.cyan(`Run '${typecheck}' to check the generated code.`));
+    }
+  }
+  if (notifications.failed.length) {
+    process.exitCode = 1;
+  }
 }
 
 /**
@@ -439,11 +929,12 @@ const createDirectoryContents = (target, isRoute = false) => {
   // check file or folder
   if (stats.isFile()) {
     const writePath = `${target['dir']}/${target['fileName']}`;
+    const shownPath = relative(writePath);
     if (fs.existsSync(writePath)) {
       // define error message if a file is exists
       notifications.failed.push({
-        name: writePath,
-        msg: `${writePath} file already exists`,
+        name: shownPath,
+        msg: `${shownPath} file already exists`,
         msgType: 'red'
       });
     } else {
@@ -467,29 +958,36 @@ const createDirectoryContents = (target, isRoute = false) => {
       contents = contents.replace(/'__DIR__'/g, thirdReplace);
       // modify content
       contents = contents.replace(/'__PATH__'/g, secondReplace);
+      // fields of the model and of the request schema, replaced by functions so a $ in them is kept as it is
+      contents = contents.replace(/__FIELDS__/g, () => renderModelFields(fieldsForGenerating));
+      contents = contents.replace(/__BODY_PROPERTIES__/g, () => renderSchemaProperties(fieldsForGenerating));
+      contents = contents.replace(/__QUERY_PROPERTIES__/g, () => renderQueryProperties(fieldsForGenerating));
+      contents = contents.replace(/__REQUIRED__/g, () => renderRequired(fieldsForGenerating));
       // create a new file with contents
       fs.writeFileSync(writePath, contents, 'utf8');
       // define message after file created
       notifications.added.push({
-        name: writePath,
-        msg: `${writePath}`,
+        name: shownPath,
+        msg: shownPath,
         msgType: 'cyan'
       });
       if (isRoute) {
         // update index route
         let fileName = modifyAppRoute(target['name']);
-        if (fileName) {
+        if (fileName && notifications.modified.some((obj) => obj.name === relative(fileName))) {
+          // app route was already reported as modified
+        } else if (fileName) {
           // define message in case app route is updated
           notifications.modified.push({
-            name: fileName,
-            msg: `${fileName} was modified.`,
+            name: relative(fileName),
+            msg: `${relative(fileName)} was modified.`,
             msgType: 'yellow'
           });
         } else {
           // define message in case app route is not updated
-          notifications.modified.push({
-            name: writePath,
-            msg: `${writePath} was defined, please import it into your application.`,
+          notifications.notes.push({
+            name: shownPath,
+            msg: `${shownPath} was defined, please import it into src/routes/app.route.ts.`,
             msgType: 'yellow'
           });
         }
@@ -572,4 +1070,4 @@ const kebabToUpperCamel = (string) => {
 };
 
 // run main action for generating
-run();
+await run();

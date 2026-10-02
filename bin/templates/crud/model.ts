@@ -2,5 +2,5 @@
 import mongoose from 'mongoose'
 
 export default mongoose.model('__MODEL__', new mongoose.Schema({
-  name: String
+  __FIELDS__
 }))

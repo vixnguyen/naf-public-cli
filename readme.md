@@ -1,6 +1,28 @@
 # Naf CLI 
 The CLI helps to create a Node API application with TypeScript, MongoDB, Fastify and Swagger.
 
+## Why naf
+
+The idea behind naf: code that is modular and packaged is better with or without AI. AI agents just make the savings easy to measure.
+
+Naf started long before AI coding agents, to cut the time it takes to build a Node API. Agents now write that code in minutes, so saving time is no longer the point. What still matters is how much the agent has to write, read and fix. With naf, an agent runs one command for code that is already tested, instead of writing and debugging it. That saves tokens and money, and the result is the same every time. See the [benchmark](#benchmark).
+
+You also get, without asking for it:
+
+* **Guardrails:** naf refuses mistakes such as reserved names or links to unknown models, and a command does everything or nothing
+* **Safe defaults:** unknown body fields are removed, ids are checked, and query injection is refused
+* **Docs in sync:** one schema drives both the validation and the Swagger documentation
+* **Every OS:** tested on Windows, macOS and Linux
+* **Any agent, or none:** works with Claude Code, other agents through `AGENTS.md`, or by hand, with no API key
+
+**Scope.** Naf is meant for small projects and prototypes, and as a working example of an approach. Larger or enterprise projects need things naf doesn't have, such as authentication, paging, typed models and migrations. For those, build your own version of the same idea rather than copying code around:
+
+1. Put shared, tested logic in one reusable module instead of repeating it in every feature
+2. Generate new features with a command that runs without prompts, prints JSON, and does everything or nothing
+3. Give agents short instructions that point to those commands, such as a skill or `AGENTS.md`
+4. Give them one command to check their work, such as `npm test`
+5. Measure it, as in the [benchmark](#benchmark), so you know it saves tokens
+
 ## Setting up
 
 #### 1. Installation
@@ -39,8 +61,67 @@ Scaffold  | Usage
 ---       | ---
 [Model]      | `naf model`
 [Controller, Route, Schema]      | `naf controller`
+[Several models with CRUD]      | `naf plan <file>`
+[List of models and controllers]      | `naf list`
+[Claude Code skill and AGENTS.md]      | `naf skill`
 
 Names must be lowercase kebab-case, for example `blog-post`. Controllers can also be given as a relative path, for example `admin/blog-post`.
+
+Models have fields such as `title:string! price:number author:ref(user)`, where `!` means required. The list route of every model filters and sorts, e.g. `GET /products?inStock=true&sort=-price`. Every command also runs without prompts when the name is given, for example:
+
+`naf init shop --db shopdb`
+
+`naf model post --fields "title:string! body:string" --crud`
+
+Add `--json` for a JSON output. The readme of the generated project describes every option, and `naf help` lists them.
+
+#### Working with Claude Code
+
+Every new project includes a Claude Code skill. Describe the API you want in your own language, and Claude Code runs the `naf` commands for you instead of writing the files by hand. This uses fewer tokens and keeps the code the same as `naf` generates it.
+
+1. Create a project and open it in Claude Code:
+
+   `naf init shop`
+
+   `cd shop`
+
+   `claude`
+
+   Or let Claude Code create it: run `claude` in an empty folder and ask
+
+   > Create a new API project named shop with `npx @vixnguyen/naf@2 init shop`, then follow its `.claude/skills/naf/SKILL.md`
+
+   Always give the full package name `@vixnguyen/naf`. The npm package called `naf` is a different project.
+
+2. Ask for what you need, for example:
+
+   * "Create an API for products with a name, a required price, a stock quantity and a category"
+   * "Tạo API quản lý đơn hàng có tổng tiền, trạng thái đã thanh toán và khách hàng"
+   * "Add an action to find a product by its name"
+   * "Don't allow deleting products"
+
+   Name the fields of each resource. If you don't, Claude Code asks for them before creating anything. The code always uses English names, whatever language you write in.
+
+3. Allow the `naf` commands when Claude Code asks for permission. It then checks the code with the `typecheck` script and lists the new routes.
+
+4. Run the API as described in [Run](#3-run) and try the routes in the Swagger documentation.
+
+Other AI coding agents, such as Codex, Cursor, GitHub Copilot or Gemini CLI, read the `AGENTS.md` of the project, which points them to the same commands. Ask them the same way.
+
+After updating naf, run `naf skill` in your projects to update the skill. It also adds `AGENTS.md` when the project has none, and keeps an existing one. The skill works with projects created by naf 2.0 or later.
+
+##### Benchmark
+
+The same three prompts were run in Claude Code (Claude Opus 5.5), twice in a naf project and twice in the same TypeScript, Fastify, Mongoose and Swagger project without naf. The prompts created categories and products with CRUD, validation, filters, sorting and Swagger, then added a custom route and removed one. Every result passed the same 18 acceptance checks against MongoDB.
+
+| Three prompts in total | With naf | Without naf |
+|---|---|---|
+| Cost | $0.35 | $1.11 |
+| Output tokens | 3,760 | 23,050 |
+| Agent turns | 19.5 | 51.5 |
+| Time | 63 s | 258 s |
+
+Creating the resources was about 5× cheaper with naf, and the later changes about 1.5× cheaper. These are averages of two sessions each (October 2026), so take them as an indication rather than a guarantee.
 
 > Note that the generating script only support when you run it at the root folder of your project.
 

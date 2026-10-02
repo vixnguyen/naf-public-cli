@@ -13,6 +13,14 @@ You also get, without asking for it:
 * **Every OS:** tested on Windows, macOS and Linux
 * **Any agent, or none:** works with Claude Code, other agents through `AGENTS.md`, or by hand, with no API key
 
+**Scope.** Naf is meant for small projects and prototypes, and as a working example of an approach. Larger or enterprise projects need things naf doesn't have, such as authentication, paging, typed models and migrations. For those, build your own version of the same idea rather than copying code around:
+
+1. Put shared, tested logic in one reusable module instead of repeating it in every feature
+2. Generate new features with a command that runs without prompts, prints JSON, and does everything or nothing
+3. Give agents short instructions that point to those commands, such as a skill or `AGENTS.md`
+4. Give them one command to check their work, such as `npm test`
+5. Measure it, as in the [benchmark](#benchmark), so you know it saves tokens
+
 ## Setting up
 
 #### 1. Installation

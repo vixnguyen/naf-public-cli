@@ -56,7 +56,7 @@ try {
  */
 const DEFAULT_FIELDS = 'name:string!';
 const FIELD_REGEX = /^([a-z][a-zA-Z0-9]*):(string|number|boolean|date|ref\(([a-z]+(?:-[a-z]+)*)\))(!?)$/;
-const RESERVED_FIELDS = ['id', '_id', '__v'];
+const RESERVED_FIELDS = ['id', '_id', '__v', 'sort'];
 
 /**
  * Parse the fields text
@@ -74,6 +74,9 @@ const parseFields = (text) => {
       return { fields, error: `Invalid field "${token}", use name:type with type string, number, boolean, date or ref(<model>), and ! for required` };
     }
     const [, name, type, ref, required] = match;
+    if (name === 'sort') {
+      return { fields, error: '"sort" is used to sort the list, choose another field name' };
+    }
     if (RESERVED_FIELDS.includes(name)) {
       return { fields, error: `"${name}" is added automatically, remove it from the fields` };
     }

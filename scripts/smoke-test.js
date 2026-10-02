@@ -168,7 +168,7 @@ const main = async () => {
   const tagRoute = path.join(projectDir, 'src', 'routes', 'tag.route.ts');
   const controllerSource = fs.readFileSync(tagController, 'utf8');
   const routeSource = fs.readFileSync(tagRoute, 'utf8');
-  check('the templates provide the helpers for custom actions', controllerSource.includes('const { actions, model, toBoom, found, boom }') && routeSource.includes('const { routes, handler, path, schema }'), controllerSource + routeSource);
+  check('the templates provide the helpers for custom actions', controllerSource.includes('const { actions, model, toBoom, found, parseQuery, boom }') && routeSource.includes('const { routes, handler, path, schema }'), controllerSource + routeSource);
   fs.writeFileSync(tagController, controllerSource.replace('\nexport default actions', `
 const baseTest = actions.test
 actions.test = async (req: any, reply: any) => \`wrapped: \${await baseTest(req, reply)}\`
@@ -194,6 +194,8 @@ export default actions`));
   check('an existing model is refused', result.code === 1 && result.json?.error?.includes('already exists'), result.output);
   result = await runJson(projectDir, ['model']);
   check('a missing name fails instead of waiting for a prompt', result.code === 1, result.output);
+  result = await runJson(projectDir, ['model', 'setting', '--fields', 'sort:number']);
+  check('sort is refused as a field name', result.code === 1 && result.json?.error?.includes('sort'), result.output);
 
   fs.rmSync(path.join(projectDir, '.claude'), { recursive: true });
   result = await runJson(projectDir, ['skill']);
@@ -228,6 +230,12 @@ export default actions`));
   check('POST with an invalid date returns 400', res.status === 400 && res.text.includes('releasedAt'), `${res.status} ${res.text}`);
   res = await request('POST', '/products', { name: 'x', price: 1, category: 'not-an-id' });
   check('POST with an invalid ref returns 400', res.status === 400 && res.text.includes('category'), `${res.status} ${res.text}`);
+  res = await request('GET', '/products?colour=red');
+  check('an unknown filter returns 400', res.status === 400 && res.text.includes('colour'), `${res.status} ${res.text}`);
+  res = await request('GET', '/products?price=cheap');
+  check('a filter with a wrong type returns 400', res.status === 400 && res.text.includes('price'), `${res.status} ${res.text}`);
+  res = await request('GET', '/products?sort=-colour');
+  check('an unknown sort field returns 400', res.status === 400 && res.text.includes('colour'), `${res.status} ${res.text}`);
 
   // 5. CRUD actions against a real database
   if (!mongoUri) {
@@ -260,6 +268,22 @@ export default actions`));
   const categoryId = res.json?._id;
   res = await request('POST', '/products', { name: 'Guide', price: 9.5, inStock: true, releasedAt: '2026-10-01T00:00:00.000Z', category: categoryId });
   check('POST stores every field type', res.status === 201 && res.json?.price === 9.5 && res.json?.inStock === true && res.json?.category === categoryId && res.json?.releasedAt?.startsWith('2026-10-01'), `${res.status} ${res.text}`);
+  await request('POST', '/products', { name: 'Atlas', price: 20, inStock: false });
+  await request('POST', '/products', { name: 'Map', price: 5, inStock: true });
+  const names = async (url) => {
+    const list = await request('GET', url);
+    return Array.isArray(list.json) ? list.json.map((item) => item.name).join(',') : `${list.status} ${list.text}`;
+  };
+  let got = await names('/products?sort=price');
+  check('index sorts ascending', got === 'Map,Guide,Atlas', got);
+  got = await names('/products?sort=-price');
+  check('index sorts descending', got === 'Atlas,Guide,Map', got);
+  got = await names('/products?inStock=true&sort=price');
+  check('index filters a boolean', got === 'Map,Guide', got);
+  got = await names('/products?price=20');
+  check('index filters a number', got === 'Atlas', got);
+  got = await names(`/products?category=${categoryId}`);
+  check('index filters a ref', got === 'Guide', got);
 };
 
 try {

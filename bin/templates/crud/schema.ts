@@ -32,6 +32,15 @@ const body = {
   additionalProperties: false
 }
 
+// filters and sort of the list, e.g. ?active=true&sort=-price,name
+const querystring = {
+  type: 'object',
+  properties: {
+    __BODY_PROPERTIES__,
+    sort: { type: 'string', description: 'Comma separated fields to sort by, - for descending, e.g. -price,name' }
+  }
+}
+
 const params = {
   type: 'object',
   properties: {
@@ -43,7 +52,8 @@ const params = {
 export default {
   index: {
     tags,
-    summary: 'List all items'
+    summary: 'List the items, filtered by any field and sorted',
+    querystring
   },
   read: {
     tags,

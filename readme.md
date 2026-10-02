@@ -45,7 +45,7 @@ Scaffold  | Usage
 
 Names must be lowercase kebab-case, for example `blog-post`. Controllers can also be given as a relative path, for example `admin/blog-post`.
 
-Models have fields such as `title:string! price:number author:ref(user)`, where `!` means required. Every command also runs without prompts when the name is given, for example:
+Models have fields such as `title:string! price:number author:ref(user)`, where `!` means required. The list route of every model filters and sorts, e.g. `GET /products?inStock=true&sort=-price`. Every command also runs without prompts when the name is given, for example:
 
 `naf init shop --db shopdb`
 

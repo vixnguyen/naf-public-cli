@@ -10,6 +10,7 @@
  *    model: data model for processing actions
  *    toBoom: turns an error into a 400 for invalid data or ids, otherwise a 500
  *    found: returns the document, or throws a 404 when it is null
+ *    parseQuery: turns the query string into a mongoose filter and sort, as used by index
  *    actions: is based action included CRUD and test action
  * }
  */
@@ -43,11 +44,75 @@ export class BaseController {
       return obj
     }
 
+    // Type of a field of the model, e.g. String, Number, Boolean, Date or ObjectId
+    const fieldType = (key: string) => (key.startsWith('$') || key === '__v' ? undefined : dataModel.schema.path(key)?.instance)
+
+    // Convert a query string value to the type of its field
+    const toFieldValue = (key: string, value: any) => {
+      const type = fieldType(key)
+      if (type === 'Number') {
+        const number = Number(value)
+        if (value === '' || Number.isNaN(number)) {
+          throw boom.badRequest(`Filter "${key}" must be a number`)
+        }
+        return number
+      }
+      if (type === 'Boolean') {
+        if (value === true || value === 'true') {
+          return true
+        }
+        if (value === false || value === 'false') {
+          return false
+        }
+        throw boom.badRequest(`Filter "${key}" must be true or false`)
+      }
+      if (type === 'Date') {
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) {
+          throw boom.badRequest(`Filter "${key}" must be a date`)
+        }
+        return date
+      }
+      // ids are checked by mongoose, an invalid one becomes a 400 with toBoom
+      return String(value)
+    }
+
+    /**
+     * Turn the query string into a mongoose filter and sort
+     * e.g. ?active=true&category=<id>&sort=-price,name
+     * Every other parameter must be a field of the model, it is matched exactly
+     */
+    const parseQuery = (query: any = {}) => {
+      const filter: any = {}
+      for (const [key, value] of Object.entries(query)) {
+        if (key === 'sort') {
+          continue
+        }
+        if (!fieldType(key)) {
+          throw boom.badRequest(`Unknown filter "${key}"`)
+        }
+        if (typeof value === 'object' && value !== null) {
+          throw boom.badRequest(`Filter "${key}" takes one value`)
+        }
+        filter[key] = toFieldValue(key, value)
+      }
+      const sort: any = {}
+      for (const item of String(query.sort ?? '').split(',').map((part) => part.trim()).filter(Boolean)) {
+        const key = item.replace(/^-/, '')
+        if (!fieldType(key)) {
+          throw boom.badRequest(`Unknown sort field "${key}"`)
+        }
+        sort[key] = item.startsWith('-') ? -1 : 1
+      }
+      return { filter, sort }
+    }
+
     return {
       boom: boom,
       model: dataModel,
       toBoom: toBoom,
       found: found,
+      parseQuery: parseQuery,
       actions: {
         test: async (req: any, reply: any) => {
           try {
@@ -58,7 +123,8 @@ export class BaseController {
         },
         index: async (req: any, reply: any) => {
           try {
-            const data = await dataModel.find()
+            const { filter, sort } = parseQuery(req.query)
+            const data = await dataModel.find(filter).sort(sort)
             return data
           } catch (err) {
             throw toBoom(err)

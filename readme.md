@@ -41,7 +41,7 @@ Scaffold  | Usage
 [Controller, Route, Schema]      | `naf controller`
 [Several models with CRUD]      | `naf plan <file>`
 [List of models and controllers]      | `naf list`
-[Claude Code skill]      | `naf skill`
+[Claude Code skill and AGENTS.md]      | `naf skill`
 
 Names must be lowercase kebab-case, for example `blog-post`. Controllers can also be given as a relative path, for example `admin/blog-post`.
 
@@ -84,7 +84,9 @@ Every new project includes a Claude Code skill. Describe the API you want in you
 
 4. Run the API as described in [Run](#3-run) and try the routes in the Swagger documentation.
 
-After updating naf, run `naf skill` in your projects to update the skill. The skill works with projects created by naf 2.0 or later.
+Other AI coding agents, such as Codex, Cursor, GitHub Copilot or Gemini CLI, read the `AGENTS.md` of the project, which points them to the same commands. Ask them the same way.
+
+After updating naf, run `naf skill` in your projects to update the skill. It also adds `AGENTS.md` when the project has none, and keeps an existing one. The skill works with projects created by naf 2.0 or later.
 
 > Note that the generating script only support when you run it at the root folder of your project.
 

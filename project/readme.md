@@ -31,7 +31,7 @@ The Swagger documentation is available at `localhost:2101/documentation`.
 The database settings are in `src/config/db.ts`.
 
 #### Type-check the project
-`npm run typecheck`
+`npm run typecheck`, or `npm test` which runs the same check
 
 #### Environment variables
 You can override the defaults without changing the code:
@@ -136,7 +136,9 @@ Your project includes a Claude Code skill in `.claude/skills/naf/SKILL.md`, so C
 2. Ask for what you need in your own language, for example "create an API for products with a name, a required price and a category", "add an action to find a product by its name" or "don't allow deleting products". Name the fields of each resource, otherwise Claude Code asks for them first.
 3. Allow the `naf` commands when Claude Code asks for permission. It then checks the code and lists the new routes.
 
-After updating naf, run `naf skill` to update the skill.
+Other AI coding agents, such as Codex, Cursor, GitHub Copilot or Gemini CLI, read `AGENTS.md`, which points them to the same commands.
+
+After updating naf, run `naf skill` to update the skill. It also adds `AGENTS.md` when it is missing, and keeps your own.
 
 ### You can find all possible blueprints in the table below:
 
@@ -146,6 +148,6 @@ Scaffold  | Usage
 [Controller, Route, Schema]      | `naf controller`
 [Several models with CRUD]      | `naf plan <file>`
 [List of models and controllers]      | `naf list`
-[Claude Code skill]      | `naf skill`
+[Claude Code skill and AGENTS.md]      | `naf skill`
 
 `Note that, Your models always generated in src/models`

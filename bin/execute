@@ -21,6 +21,9 @@ const templateNewDir = `${projectInitDir}/bin/templates/new/`;
 // Claude Code skill installed in the projects
 const templateSkillPath = `${projectInitDir}/bin/templates/skill/SKILL.md`;
 const skillPath = '.claude/skills/naf/SKILL.md';
+// instructions for other AI coding agents, which read AGENTS.md
+const templateAgentsPath = `${projectInitDir}/bin/templates/skill/AGENTS.md`;
+const agentsPath = 'AGENTS.md';
 const routeDir = `${srcDir}routes/`;
 
 // get from node process
@@ -506,15 +509,21 @@ const prepareController = () => {
 };
 
 /**
- * Copy the Claude Code skill into a project
- * @output true if the skill was already installed
+ * Copy the Claude Code skill into a project, and AGENTS.md when the project has none
+ * An existing AGENTS.md is kept, it may contain the user's own instructions
+ * @output { updated: true if the skill was already installed, agents: 'added' or 'kept' }
  */
 const installSkill = (dir) => {
   const target = path.join(dir, skillPath);
-  const existed = fs.existsSync(target);
+  const updated = fs.existsSync(target);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(templateSkillPath, target);
-  return existed;
+  const agentsTarget = path.join(dir, agentsPath);
+  const agents = fs.existsSync(agentsTarget) ? 'kept' : 'added';
+  if (agents === 'added') {
+    fs.copyFileSync(templateAgentsPath, agentsTarget);
+  }
+  return { updated, agents };
 };
 
 /**
@@ -767,11 +776,12 @@ const generator = {
     if (!isProjectRoot()) {
       return notProjectRoot();
     }
-    const updated = installSkill(projectDir);
+    const { updated, agents } = installSkill(projectDir);
     if (options.json) {
-      return console.log(JSON.stringify({ skill: skillPath, updated }));
+      return console.log(JSON.stringify({ skill: skillPath, updated, agents }));
     }
     console.log(chalk.cyan(`Claude Code skill ${updated ? 'updated' : 'added'}: ${skillPath}`));
+    console.log(chalk.cyan(agents === 'added' ? `Instructions for other AI coding agents added: ${agentsPath}` : `${agentsPath} already exists and was kept`));
   },
   help: () => {
     console.log(chalk.yellow(`'${cmdAlias} init [name] [--db <name>]' to init a new project`));
@@ -779,7 +789,7 @@ const generator = {
     console.log(chalk.yellow(`'${cmdAlias} controller [name] [--route <route>] [--model <name> [--fields "..."]]' to create controller`));
     console.log(chalk.yellow(`'${cmdAlias} plan <plan.json | ->' to create several models with CRUD actions`));
     console.log(chalk.yellow(`'${cmdAlias} list' to list the models and controllers`));
-    console.log(chalk.yellow(`'${cmdAlias} skill' to add the Claude Code skill to a project`));
+    console.log(chalk.yellow(`'${cmdAlias} skill' to add or update the Claude Code skill and AGENTS.md of a project`));
     console.log(chalk.yellow(`Without a name, the command asks for it. Add --json for a JSON output.`));
   }
 }

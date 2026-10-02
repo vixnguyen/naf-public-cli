@@ -139,6 +139,7 @@ const main = async () => {
   check('naf init creates the project', fs.existsSync(path.join(projectDir, 'package.json')));
   check('naf init adds .gitignore', fs.existsSync(path.join(projectDir, '.gitignore')) && !fs.existsSync(path.join(projectDir, 'gitignore')));
   check('naf init adds the Claude Code skill', fs.existsSync(path.join(projectDir, '.claude', 'skills', 'naf', 'SKILL.md')));
+  check('naf init adds AGENTS.md for other agents', fs.readFileSync(path.join(projectDir, 'AGENTS.md'), 'utf8').includes('.claude/skills/naf/SKILL.md'));
 
   await runCli(projectDir, ['model'], [['Model name', 'blog-post'], ['Enter fields', ''], ['CRUD', 'y'], ['Route name', '']]);
   const appRoute = fs.readFileSync(path.join(projectDir, 'src', 'routes', 'app.route.ts'), 'utf8');
@@ -212,13 +213,20 @@ export default actions`));
   check('an extra argument is refused', result.code === 1 && result.json?.error?.includes('extra') && !fs.existsSync(path.join(projectDir, 'src', 'models', 'setting.model.ts')), result.output);
 
   fs.rmSync(path.join(projectDir, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), 'my own instructions\n');
   result = await runJson(projectDir, ['skill']);
   check('naf skill adds the skill', result.code === 0 && fs.existsSync(path.join(projectDir, '.claude', 'skills', 'naf', 'SKILL.md')), result.output);
+  check('naf skill keeps an existing AGENTS.md', result.json?.agents === 'kept' && fs.readFileSync(path.join(projectDir, 'AGENTS.md'), 'utf8') === 'my own instructions\n', result.output);
+  fs.rmSync(path.join(projectDir, 'AGENTS.md'));
+  result = await runJson(projectDir, ['skill']);
+  check('naf skill adds a missing AGENTS.md', result.json?.agents === 'added' && fs.existsSync(path.join(projectDir, 'AGENTS.md')), result.output);
 
   // 3. Install and type-check
   run('pnpm install', projectDir);
   run('pnpm typecheck', projectDir);
   check('the generated project type-checks', true);
+  run('pnpm test', projectDir);
+  check('the test script of the project runs the type check', true);
 
   // 4. Start the server and check the routes
   await startServer();
